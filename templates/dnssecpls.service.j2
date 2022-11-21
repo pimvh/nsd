@@ -1,0 +1,11 @@
+[Unit]
+Description=Runs DNSSEC key rotation as a systemd service
+Wants=dnssecpls@{{ zone_name }}.timer
+OnFailure=failmail@%N.service
+
+[Service]
+ExecStart=/usr/bin/dnssecpls zsk_rollover {{ zone_name }}
+WorkingDirectory=/etc/nsd
+
+[Install]
+WantedBy=multi-user.target

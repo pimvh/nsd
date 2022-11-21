@@ -1,0 +1,35 @@
+---
+nsd_install: true
+nsd_directory: /etc/nsd
+
+nsd_server_interfaces:
+  - "{{ ipv4 }}"
+  - "{{ ipv6 }}"
+
+nsd_server_pid_file: "/etc/nsd/run/nsd.pid"
+nsd_server_xfrd_file: "/etc/nsd/db/xfrd.state"
+nsd_server_xfr_dir: "/etc/nsd/tmp"
+nsd_server_zones_dir: "/etc/nsd/zones"
+nsd_server_dnssec_key_dir: "/etc/nsd/keys"
+nsd_server_zonelist_file: "/etc/nsd/db/zone.list"
+nsd_server_refuse_any: "yes"
+nsd_server_chroot: "{{ nsd_directory }}"
+nsd_server_remote_control_enable: "yes"
+nsd_server_remote_control_interfaces:
+  - "127.0.0.1"
+  - "::1"
+
+nsd_dkim_enabled: "{{ postfix_dkim_enabled | default('') }}"
+nsd_dkim_keys: "{{ postfix_dkim_keys | default('') }}"
+
+# pass these variables. see README
+nsd_zones_attributes: {}
+nsd_zones: {}
+
+# magic to generate DNS serial (bliss)
+_today: "{{ lookup('pipe','gdate +%Y%m%d') }}"
+_epoch_midnight: "{{ lookup('pipe','gdate --date={{ _today }} +%s') }}"
+_time_now: "{{ lookup('pipe','gdate +%s') }}"
+_num_secs: "{{ _time_now  | int - _epoch_midnight | int }}"
+_day_incr: "{{ (_num_secs | int * 99 / 86400)    | int }}"
+_dns_serial: "{{ _today }}{{ _day_incr }}"

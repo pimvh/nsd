@@ -1,0 +1,11 @@
+[Unit]
+Description=Run dnssecpls on weekly interval
+Requires=dnssecpls@{{ zone_name }}.service
+
+[Timer]
+Unit=dnssecpls@{{ zone_name }}.service
+OnCalendar=Thursday *-*-* 12:00:00
+Persistent=true
+
+[Install]
+WantedBy=timers.target

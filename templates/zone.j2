@@ -1,0 +1,69 @@
+{{ ansible_managed | comment(decoration=";") }}
+; NSD data file for {{ zone_name }}
+;
+
+$ORIGIN {{ zone_name }}.; 'default' record as FQDN for this zone
+$TTL {{ nsd_zones_attributes[zone_name].ttl }}; default time-to-live for this zone
+
+{{ zone_name }}.   IN  SOA  ns1.{{ zone_name }}. hostmaster.{{ zone_name }}. (
+        {{ _dns_serial }} ; Serial
+        {{ nsd_zones_attributes[zone_name].dns_refresh }} ; Refresh
+        {{ nsd_zones_attributes[zone_name].dns_retry }} ; Retry
+        {{ nsd_zones_attributes[zone_name].dns_expire }} ; Expire
+        {{ nsd_zones_attributes[zone_name].dns_negative_response_cache }} ; Negative response caching TTL
+)
+
+{% for record in nsd_records[zone_name] | selectattr("type", "equalto", "NS") %}
+; The nameserver that are authoritative for this zone.
+{{ "%s\t\t\t%s\t\t%s" % (record.id, record.type, record.record) }}
+{% endfor %}
+
+; records
+
+; raw records
+{% for record in nsd_records[zone_name] | selectattr("type", "equalto","raw") %}
+{{ record.record }}
+{% endfor %}
+
+; MX records
+{% for record in nsd_records[zone_name] | selectattr("type", "equalto","MX") %}
+{{ "%s\t%s\t%s\t%s" % (record.id, record.type, record.value, record.record) }}
+{% endfor %}
+
+; CNAME records
+{% for record in nsd_records[zone_name] | selectattr("type", "equalto", "CNAME") %}
+{{ "%s\t\t%s\t%s" % (record.id, record.type, record.record) }}
+{% endfor %}
+
+; A records
+{% for record in nsd_records[zone_name] | selectattr("type", "equalto","A") %}
+{{ "%s\t\t%s\t%s" % (record.id, record.type, record.record) }}
+{% endfor %}
+
+; AAAA records
+{% for record in nsd_records[zone_name] | selectattr("type", "equalto", "AAAA") %}
+{{ "%s\t\t%s\t%s" % (record.id, record.type, record.record) }}
+{% endfor %}
+
+
+; TXT records
+{% for record in nsd_records[zone_name] | selectattr("type", "equalto", "TXT")%}
+{{ "%s\t\t%s\t\"%s\"" % (record.id, record.type, record.record) }}
+{% endfor %}
+
+{% if nsd_zones_attributes[zone_name].dkim is defined %}
+{% if nsd_zones_attributes[zone_name].dkim %}
+{% for record in dkim_keys %}
+{{ record }}
+{% endfor %}
+{% endif %}
+{% endif %}
+
+{% if nsd_zones_attributes[zone_name].make_ascii is defined %}
+{% if nsd_zones_attributes[zone_name].make_ascii %}
+; Fun stuff
+{% for line in lookup('file', zone_name + '/ascii-art.txt').splitlines() %}
+ascii NAPTR {{ 100 + 10 * loop.index0 }} 10 "" "{{ line }}" "" .
+{% endfor %}
+{% endif %}
+{% endif %}

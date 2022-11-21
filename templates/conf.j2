@@ -1,0 +1,80 @@
+{{ ansible_managed | comment(decoration="# ") }}
+
+# Example.com nsd.conf file
+# This is a comment.
+
+server:
+    server-count: 1 # use this number of cpu cores
+    database: ""  # or use "/var/db/nsd/nsd.db"
+    username: nsd
+    # do not chroot when managed by systemd
+    # chroot: {{ nsd_server_chroot }}
+{% for interface in nsd_server_interfaces %}
+    interface: {{ interface }}
+{% endfor %}
+    pidfile: "{{ nsd_server_pid_file }}"
+    xfrdfile: "{{ nsd_server_xfrd_file }}"
+    xfrdir: "{{ nsd_server_xfr_dir }}"
+    zonesdir: "{{ nsd_server_zones_dir }}"
+    zonelistfile: "{{ nsd_server_zonelist_file }}"
+    hide-version: "yes"
+    hide-identity: "yes"
+    refuse-any: "{{ nsd_server_refuse_any }}"
+
+remote-control:
+    control-enable: "{{ nsd_server_remote_control_enable }}"
+{% if nsd_server_remote_control_interfaces is defined %}
+{% for interface in nsd_server_remote_control_interfaces %}
+    control-interface: {{ interface }}
+{% endfor %}
+    server-key-file: "{{ nsd_directory }}/nsd_server.key"
+    server-cert-file: "{{ nsd_directory }}/nsd_server.pem"
+    control-key-file: "{{ nsd_directory }}/nsd_control.key"
+    control-cert-file: "{{ nsd_directory }}/nsd_control.pem"
+{% endif %}
+
+{% for name, config in nsd_zones_attributes.items() %}
+zone:
+    name: {{ name }}
+    zonefile: {{ name }}.zone{% if config.dnssec.enabled %}.signed{% endif +%}
+{% if config.notify is defined %}
+    notify: {{ config.notify.ip }} {{ config.notify.value}}
+    request-xfr: {{ config.notify.ip }} {{ config.notify.value}}
+{% endif %}
+
+{% if config.reverse_zone.enabled %}
+zone:
+    name: {{ config.reverse_zone.name_v4 }}
+    zonefile: {{ config.reverse_zone.name_v4 }}.zone
+{% if config.notify is defined %}
+    notify: {{ config.notify.ip }} {{ config.notify.value}}
+    request-xfr: {{ config.notify.ip }} {{ config.notify.value}}
+{% endif %}
+
+zone:
+    name: {{ config.reverse_zone.name_v6 }}
+    zonefile: {{ config.reverse_zone.name_v6 }}.zone
+{% if config.notify is defined %}
+    notify: {{ config.notify.ip }} {{ config.notify.value}}
+    request-xfr: {{ config.notify.ip }} {{ config.notify.value}}
+{% endif %}
+{% endif %}
+
+{% endfor %}
+
+{#
+ # TODO
+ # zone:
+ # # this server is master, 192.0.2.1 is the secondary.
+ # name: masterzone.com
+ # zonefile: /etc/nsd/masterzone.com.zone
+ # notify: 192.0.2.1 NOKEY
+ # provide-xfr: 192.0.2.1 NOKEY
+ #
+ # zone:
+ #  # this server is secondary, 192.0.2.2 is master.
+ #  name: secondzone.com
+ #  zonefile: /etc/nsd/secondzone.com.zone
+ #  allow-notify: 192.0.2.2 NOKEY
+ #  request-xfr: 192.0.2.2 NOKEY
+ #}

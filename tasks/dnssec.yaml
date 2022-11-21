@@ -1,0 +1,76 @@
+---
+- name: Move dnsecsecpls script to remote machine
+  template:
+    src: dnssecpls.py.j2
+    dest: /usr/bin/dnssecpls
+    owner: root
+    group: root
+    mode: u=rwx,g=rx,o=rx
+  become: true
+
+- name: Update/create signed zone
+  block:
+    - name: Check if signed zone file is already present
+      stat:
+        path: "{{ nsd_server_zones_dir }}/{{ zone_name }}.zone.signed"
+      become: true
+      register: signed_zone
+
+    - name: Update signed zone (when it exists)
+      command: "dnssecpls update_zone {{ zone_name }}"
+      args:
+        chdir: "{{ nsd_directory }}"
+      become: true
+      when: signed_zone.stat.exists
+
+    - name: Create signed zone (when it exists)
+      command: "dnssecpls create_zone {{ zone_name }}"
+      args:
+        chdir: "{{ nsd_directory }}"
+      become: true
+      when: not signed_zone.stat.exists
+
+- name: Make systemd services for keyrollover of zone {{ zone_name }}
+  block:
+    - name: Move dnssecpls systemd timer file to host
+      template:
+        src: dnssecpls.timer.j2
+        dest: "/lib/systemd/system/dnssecpls@{{ zone_name }}.timer"
+        # validate: "systemd-analyze verify %s"
+        owner: root
+        group: root
+        mode: u=rw,g=r,o=r
+      become: true
+
+    - name: Move dnssecpls.service systemd file to host
+      template:
+        src: dnssecpls.service.j2
+        dest: "/lib/systemd/system/dnssecpls@{{ zone_name }}.service"
+        # validate: "systemd-analyze verify %s"
+        owner: root
+        group: root
+        mode: u=rw,g=r,o=r
+      become: true
+
+    - name: Validate dnssecpls.service
+      command: systemd-analyze verify dnssecpls@{{ zone_name }}.service
+      args:
+        chdir: "/lib/systemd"
+      changed_when: false
+      become: true
+
+    - name: Validate dnssecpls.timer
+      command: systemd-analyze verify dnssecpls@{{ zone_name }}.timer
+      args:
+        chdir: "/lib/systemd"
+      changed_when: false
+      become: true
+
+    - name: Enable dnssec timer service
+      service:
+        name: dnssecpls@{{ zone_name }}.timer
+        state: started
+        enabled: true
+        daemon_reload: true
+      become: true
+# rest should be handled by dnssecpls

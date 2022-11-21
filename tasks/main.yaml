@@ -1,0 +1,125 @@
+# https://ubuntu.com/server/docs/service-domain-name-service-dns
+# https://www.digitalocean.com/community/tutorials/how-to-configure-nsd-as-a-private-network-dns-server-on-debian-9
+---
+- name: install required packages
+  package:
+    name:
+      - nsd
+      - dnsutils
+      - ldnsutils
+      - python3-netaddr
+    state: present
+  become: true
+  when: nsd_install
+  tags:
+    - nsd_install
+
+- name: create nsd keys directory
+  file:
+    path: "{{ nsd_directory }}/keys"
+    owner: root
+    group: nsd
+    state: directory
+    mode: u=rwx,g=rx,o=x
+  become: true
+  tags:
+    - nsd_setup
+
+- name: create nsd keys ZSK and KSK directories
+  file:
+    path: "{{ nsd_directory }}/keys/{{ item }}"
+    owner: root
+    group: nsd
+    state: directory
+    mode: u=rwx,g=rx,o=x
+  loop:
+    - ZSK
+    - KSK
+  become: true
+  tags:
+    - nsd_setup
+
+- name: create nsd zones directory
+  file:
+    path: "{{ nsd_directory }}/zones"
+    owner: root
+    group: nsd
+    state: directory
+    mode: u=rwx,g=rx,o=rx
+  become: true
+  tags:
+    - nsd_setup
+
+- name: create tmp, db and pidfile directory
+  file:
+    path: "{{ nsd_directory }}/{{ dir }}"
+    owner: root
+    group: nsd
+    state: directory
+    mode: u=rwx,g=rwx,o=rx
+  become: true
+  loop:
+    - db
+    - tmp
+    - run
+  loop_control:
+    loop_var: dir
+  tags:
+    - nsd_setup
+
+- name: check if certs are present
+  stat:
+    path: "{{ cert_file }}"
+  become: true
+  loop:
+    - "{{ nsd_directory }}/nsd_server.key"
+    - "{{ nsd_directory }}/nsd_server.pem"
+    - "{{ nsd_directory }}/nsd_control.key"
+    - "{{ nsd_directory }}/nsd_control.pem"
+  loop_control:
+    loop_var: cert_file
+  register: control_certs
+  tags:
+    - nsd_setup
+
+- name: setup nsd-control
+  command: nsd-control-setup
+  become: true
+  # only run when not all certs are present
+  when: "not control_certs.results | map(attribute='stat') | map(attribute='exists') | all"
+  tags:
+    - nsd_setup
+
+- name: Move zone files to host
+  include_tasks:
+    file: move_zones.yaml
+    apply:
+      become: true
+  loop: "{{ nsd_zones_attributes.keys() }}"
+  loop_control:
+    loop_var: zone_name
+  tags:
+    - nsd_update
+
+- name: Do DNSSEC for zones when required
+  include_tasks:
+    file: dnssec.yaml
+  when: nsd_zones_attributes[zone_name].dnssec.enabled is true
+  loop: "{{ nsd_zones_attributes.keys() }}"
+  loop_control:
+    loop_var: zone_name
+  tags:
+    - nsd_update
+
+- name: Move nsd.conf file template file to host
+  template:
+    src: conf.j2
+    dest: "{{ nsd_directory }}/nsd.conf.d/nsd.conf"
+    validate: "/usr/sbin/nsd-checkconf %s"
+    owner: root
+    group: root
+    mode: u=rw,g=r
+  become: true
+  notify: restart nsd
+  tags:
+    - nsd_update

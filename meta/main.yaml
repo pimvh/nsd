@@ -1,0 +1,26 @@
+---
+galaxy_info:
+  author: Pim van Helvoirt
+  description: "role to configure nsd using a YAML structure"
+
+  license: GPL-3.0-only
+
+  min_ansible_version: 2.1
+
+  platforms:
+    - name: Ubuntu
+      versions:
+        - jammy
+    - name: Debian
+      versions:
+        - bullseye
+
+  galaxy_tags:
+    - nsd
+    - dns
+    - dkim
+    - spf
+    - asciiart
+
+dependencies:
+  - role: pimvh.systemd_failmail

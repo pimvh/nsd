@@ -1,0 +1,13 @@
+/var/log/named/*.log {
+  daily
+  missingok
+  rotate 7
+  compress
+  delaycompress
+  notifempty
+  dateext
+  create 0644 root named 
+  postrotate
+    /usr/sbin/rndc reconfig > /dev/null 2>/dev/null || true
+  endscript
+}

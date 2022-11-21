@@ -1,0 +1,23 @@
+{{ ansible_managed | comment(decoration=';') }}
+; NSD data file for {{ nsd_zones_attributes[zone_name].reverse_zone.name_v6 }}
+
+$ORIGIN {{ nsd_zones_attributes[zone_name].reverse_zone.name_v6 }}.; 'default' record as FQDN for this zone
+$TTL {{ nsd_zones_attributes[zone_name].ttl }}; default time-to-live for this zone
+
+{{ nsd_zones_attributes[zone_name].reverse_zone.name_v6 }}.  IN  SOA  ns1.{{ zone_name }}. hostmaster.{{ zone_name }}. (
+        {{ _dns_serial }}  ; Serial
+        {{ nsd_zones_attributes[zone_name].dns_refresh }} ; Refresh
+        {{ nsd_zones_attributes[zone_name].dns_retry }} ; Retry
+        {{ nsd_zones_attributes[zone_name].dns_expire }} ; Expire
+        {{ nsd_zones_attributes[zone_name].dns_negative_response_cache }}; Negative response caching TTL
+)
+
+; name servers
+        IN      NS      ns1.{{ zone_name }}.
+
+; PTR records
+{% for record in nsd_records[zone_name] | selectattr("type", "equalto", "AAAA") %}
+{% if not (record.id == '@' and record.record is defined) and not record.no_ptr is defined %}
+{{"%s\t\tPTR\t%s.%s." % (record.record | ansible.utils.ipaddr('revdns') | replace('.' + nsd_zones_attributes[zone_name].reverse_zone.name_v6 + '.', ''), record.id, zone_name )}}
+{% endif %}
+{% endfor %}

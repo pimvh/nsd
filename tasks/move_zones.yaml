@@ -1,0 +1,41 @@
+---
+- include_tasks: dkim_keys.yaml
+  loop: "{{ nsd_dkim_keys }}"
+  loop_control:
+    loop_var: dkim_key
+  tags:
+    - nsd_update
+  # only when dkim is defined and true
+  when: nsd_dkim_enabled
+
+- name: move zone conf file to host
+  template:
+    src: zone.j2
+    dest: "{{ nsd_directory }}/zones/{{ zone_name }}.zone"
+    validate: "/usr/sbin/nsd-checkzone {{ zone_name }} %s"
+    owner: root
+    group: nsd
+    mode: u=rw,g=r,o=r
+  notify: restart nsd
+
+- name: move reverse zone v4 conf file to host
+  template:
+    src: zone.rev4.j2
+    dest: "{{ nsd_directory }}/zones/{{ nsd_zones_attributes[zone_name].reverse_zone.name_v4 }}.zone"
+    validate: "/usr/sbin/nsd-checkzone {{ nsd_zones_attributes[zone_name].reverse_zone.name_v4 }} %s"
+    owner: root
+    group: nsd
+    mode: u=rw,g=r,o=r
+  when: nsd_zones_attributes[zone_name].reverse_zone.enabled
+  notify: restart nsd
+
+- name: move reverse zone v6 conf file to host
+  template:
+    src: zone.rev6.j2
+    dest: "{{ nsd_directory }}/zones/{{ nsd_zones_attributes[zone_name].reverse_zone.name_v6 }}.zone"
+    validate: "/usr/sbin/nsd-checkzone {{ nsd_zones_attributes[zone_name].reverse_zone.name_v6 }} %s"
+    owner: root
+    group: nsd
+    mode: u=rw,g=r,o=r
+  when: nsd_zones_attributes[zone_name].reverse_zone.enabled
+  notify: restart nsd
