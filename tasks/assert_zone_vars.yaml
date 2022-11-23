@@ -1,0 +1,74 @@
+---
+- name: Verify that required DNS zone attributes are defined
+  assert:
+    that:
+      - "{{ item }} is defined"
+      - "{{ item }} != None"
+    fail_msg: "{{ item }} needs to be set for the role to work"
+    success_msg: "Required variable {{ item }} is defined"
+  changed_when: false
+  diff: false
+  loop:
+    - nsd_zone_attributes[zone_name].ttl
+    - nsd_zone_attributes[zone_name].dns_refresh
+    - nsd_zone_attributes[zone_name].dns_retry
+    - nsd_zone_attributes[zone_name].dns_expire
+    - nsd_zone_attributes[zone_name].dns_negative_response_cache
+
+- name: Verify that required zone records are defined
+  assert:
+    that:
+      - "{{ lookup('ansible.builtin.vars', 'nsd_' + zone_name + '_records', default='') }} is defined"
+      - "{{ lookup('ansible.builtin.vars', 'nsd_' + zone_name + '_records', default='') }} | length > 0"
+      - "{{ lookup('ansible.builtin.vars', 'nsd_' + zone_name + '_records', default='') }} != None"
+    fail_msg: "nsd_{{ zone_name }}_records needs to be set for the role to work"
+    success_msg: "Required variable nsd_{{ zone_name }}_records is defined"
+  changed_when: false
+  diff: false
+
+- name: Verify that required DKIM attributes are defined
+  assert:
+    that:
+      - "{{ item }} is defined"
+      - "{{ item }} | length > 0"
+      - "{{ item }} != None"
+    fail_msg: "{{ item }} needs to be set for the role to work"
+    success_msg: "Required variable {{ item }} is defined"
+  changed_when: false
+  diff: false
+  loop:
+    - nsd_zone_attributes[zone_name].dkim_domain
+    - nsd_zone_attributes[zone_name].dkim_keys
+  when: nsd_zone_attributes[zone_name].dkim_enabled is sameas true
+
+- name: Verify that required reverse zone attributes are defined
+  assert:
+    that:
+      - "{{ item }} is defined"
+      - "{{ item }} | length > 0"
+      - "{{ item }} != None"
+    fail_msg: "{{ item }} needs to be set for the role to work"
+    success_msg: "Required variable {{ item }} is defined"
+  changed_when: false
+  diff: false
+  loop:
+    - nsd_zone_attributes[zone_name].reverse_zone_name_v4
+    - nsd_zone_attributes[zone_name].reverse_zone_name_v6
+  when: nsd_zone_attributes[zone_name].reverse_zone_enabled is sameas true
+
+- name: Verify that required DNSSEC zone attributes are defined
+  assert:
+    that:
+      - "{{ item }} is defined"
+      - "{{ item }} | length > 0"
+      - "{{ item }} != None"
+    fail_msg: "{{ item }} needs to be set for the role to work"
+    success_msg: "Required variable {{ item }} is defined"
+  changed_when: false
+  diff: false
+  loop:
+    - nsd_zone_attributes[zone_name].dnssec_algo
+    - nsd_zone_attributes[zone_name].zsk_rollover
+    - nsd_zone_attributes[zone_name].zsk_grace_period
+    - nsd_zone_attributes[zone_name].dnssec_propagation_delay
+  when: nsd_zone_attributes[zone_name].dnssec_enabled is sameas true

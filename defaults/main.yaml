@@ -19,12 +19,28 @@ nsd_server_remote_control_interfaces:
   - "127.0.0.1"
   - "::1"
 
-nsd_dkim_enabled: "{{ postfix_dkim_enabled | default('') }}"
-nsd_dkim_keys: "{{ postfix_dkim_keys | default('') }}"
-
 # pass these variables. see README
-nsd_zones_attributes: {}
-nsd_zones: {}
+nsd_zones: []
+
+nsd_zone_attributes: {}
+
+nsd_default_ttl: 300
+nsd_default_dns_refresh: 300
+nsd_default_dns_retry: 300
+nsd_default_dns_expire: 300
+nsd_default_dns_negative_response_cache: 300
+nsd_default_dnssec_algo: ECDSAP384SHA384
+nsd_default_make_ascii: false
+nsd_default_dkim_enabled: false
+nsd_default_dkim_domain: ""
+nsd_default_dkim_keys: []
+nsd_default_dnssec_enabled: false
+nsd_default_zsk_rollover: "7"
+nsd_default_zsk_grace_period: "1"
+nsd_default_dnssec_propagation_delay: "24"
+nsd_default_reverse_zone_enabled: false
+nsd_default_reverse_zone_name_v4: ""
+nsd_default_reverse_zone_name_v6: ""
 
 # magic to generate DNS serial (bliss)
 _today: "{{ lookup('pipe','gdate +%Y%m%d') }}"

@@ -1,7 +1,7 @@
 - name: fetch all DKIM keys for the zonefile
   block:
-    - name: read remote dkim key records {{ dkim_key.name }}
-      command: "cat {{ '/etc/dkimkeys/' + postfix_mydomain + '/' + dkim_key.name + '.txt' }}"
+    - name: Read remote dkim key records {{ dkim_key.name }}
+      command: "cat {{ '/etc/dkimkeys/' + nsd_dkim_domain + '/' + dkim_key.name + '.txt' }}"
       changed_when: false
       check_mode: false
       become: true
@@ -9,4 +9,4 @@
 
     - name: append key to list of dkim_keys
       set_fact:
-        dkim_keys: "{{ dkim_keys | default([]) + [ dkim_cat.stdout ] }}"
+        nsd_dkim_records: "{{ nsd_dkim_records | default([]) + [ dkim_cat.stdout ] }}"

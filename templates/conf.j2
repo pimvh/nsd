@@ -33,27 +33,27 @@ remote-control:
     control-cert-file: "{{ nsd_directory }}/nsd_control.pem"
 {% endif %}
 
-{% for name, config in nsd_zones_attributes.items() %}
+{% for name, config in nsd_zone_attributes.items() %}
 zone:
     name: {{ name }}
-    zonefile: {{ name }}.zone{% if config.dnssec.enabled %}.signed{% endif +%}
+    zonefile: {{ name }}.zone{% if config.dnssec_enabled %}.signed{% endif +%}
 {% if config.notify is defined %}
     notify: {{ config.notify.ip }} {{ config.notify.value}}
     request-xfr: {{ config.notify.ip }} {{ config.notify.value}}
 {% endif %}
 
-{% if config.reverse_zone.enabled %}
+{% if config.reverse_zone_enabled %}
 zone:
-    name: {{ config.reverse_zone.name_v4 }}
-    zonefile: {{ config.reverse_zone.name_v4 }}.zone
+    name: {{ config.reverse_zone_name_v4 }}
+    zonefile: {{ config.reverse_zone_name_v4 }}.zone
 {% if config.notify is defined %}
     notify: {{ config.notify.ip }} {{ config.notify.value}}
     request-xfr: {{ config.notify.ip }} {{ config.notify.value}}
 {% endif %}
 
 zone:
-    name: {{ config.reverse_zone.name_v6 }}
-    zonefile: {{ config.reverse_zone.name_v6 }}.zone
+    name: {{ config.reverse_zone_name_v6 }}
+    zonefile: {{ config.reverse_zone_name_v6 }}.zone
 {% if config.notify is defined %}
     notify: {{ config.notify.ip }} {{ config.notify.value}}
     request-xfr: {{ config.notify.ip }} {{ config.notify.value}}

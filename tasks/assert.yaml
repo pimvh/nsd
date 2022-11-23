@@ -10,9 +10,8 @@
   changed_when: false
   diff: false
   loop:
-    - "install_nsd"
     - "nsd_directory"
-    - "nsd_server_interfaces:"
+    - "nsd_server_interfaces"
     - "nsd_server_pid_file"
     - "nsd_server_xfrd_file"
     - "nsd_server_xfr_dir"
@@ -22,18 +21,13 @@
     - "nsd_server_refuse_any"
     - "nsd_server_chroot"
     - "nsd_server_remote_control_enable"
-    - "nsd_server_remote_control_interfaces:"
-    - "nsd_dkim_enabled"
+    - "nsd_server_remote_control_interfaces"
+    - "nsd_server_interfaces"
     - "nsd_zones"
 
-- name: Verify that required variables are defined for DKIM
-  assert:
-    that:
-      - "{{ item }}  is defined"
-      - "{{ item }} != None"
-    fail_msg: "{{ item }} needs to be set for the role to work"
-    success_msg: "Required variable {{ item }} is defined"
-  changed_when: false
-  loop:
-    - "nsd_dkim_keys"
-  when: postfix_dkim_enabled
+- name: Verify that required zones attributes are defined
+  ansible.builtin.include_tasks:
+    file: assert_zone_vars.yaml
+  loop: "{{ nsd_zones }}"
+  loop_control:
+    loop_var: zone_name

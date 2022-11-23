@@ -25,39 +25,56 @@ roles:
 Variable structure:
 
 ```
-nsd_zones_attributes:
-  example_zone_name:
+# list of all zones
+nsd_zones:
+  - "bastia.prac.os3.nl"
+
+nsd_zone_attributes:
+  bastia.prac.os3.nl:
     ttl: 300
     dns_refresh: 300
     dns_retry: 300
     dns_expire: 300
     dns_negative_response_cache: 300
     make_ascii: true
-    dkim: true
-    dnssec:
-      enabled: true
-      algo: ECDSAP384SHA384
-      zsk_rollover: "7" # <-- in days
-      zsk_grace_period: "1" <-- in days
-      propagation_delay: "24" <-- in hours
-    reverse_zone:
-      enabled: true
-      name_v4: "{{ range_ipv4 | get_rev_dns_origin }}"
-      name_v6: "{{ range_ipv6 | get_rev_dns_origin(version=6) }}"
+    dkim_enabled: true
+    dkim_domain: bastia.prac.os3.nl
+    dkim_keys: "{{ list of dkim_keys }}"
+    dnssec_enabled: true
+    dnssec_algo: ECDSAP384SHA384
+    zsk_rollover: "7" <-- in days
+    zsk_grace_period: "1" <-- in days
+    dnssec_propagation_delay: "24" <-- in hours
+    reverse_zone_enabled: true
+    reverse_zone_name_v4: "{{ assigned_range_ipv4 | get_rev_dns_origin }}" <-- Use supplied filter to calculate rev dns for a zone,
+    reverse_zone_name_v6: "{{ assigned_range_ipv6 | get_rev_dns_origin(version=6) }}" <-- idem, but for v6.
 
-nsd_records:
-  example_zone_name:
-    - id: "@"
-      type: A
-      record: "<< ip addr here >>"
-      no_ptr: true
-    - id: "@"
-      type: MX
-      value: 10
-      record: "{{ zone_name | default('') }}."
-    - type: "raw"
-      record: >-
-        << raw DNS record here >>
+"nsd_<< your zone >>_records":
+  - id: "@"
+    type: NS
+    record: "ns1"
+  - id: "@"
+    type: A
+    record: "127.0.0.1"
+    no_ptr: true <-- supply no_ptr for it to not show up in the PTR file
+  - id: "@"
+    type: AAAA
+    record: "::1"
+    no_ptr: true <-- supply no_ptr for it to not show up in the PTR file
+  - id: "@"
+    type: MX
+    value: 10
+    record: "{{ zone_name | default('') }}." <-- you can use the name of the zone in here
+    type: CNAME
+    record: "@"
+# e.g. SPF record:
+  - id: "@"
+    type: "TXT"
+    record: "v=spf1 ip4:<< ipv4_addr >> ip6:<< ipv6_addr >> ~all" <--
+  - type: "raw"
+    record: >-
+        << some_raw_record, which will be placed in the file directly >>
+
 ```
 
 # TLDR - What will happen if I run this
@@ -68,6 +85,13 @@ nsd_records:
 - setup nsd-control with certificates
 - setup zones and move dnssecpls script
 - setup dnssecpls service (with failmail to required addr)
+
+# Future Improvements
+
+- Allow non authorative zones and key directives
+- Improve sane defaults of variables (see defaults defined in defaults/main.yaml)
+- Allow TTL to be passed in records
+- Allow duplicates of dnssecpls script with different variables from ZSK rollover etc as specified in nsd_zone_attributes
 
 # License
 

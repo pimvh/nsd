@@ -25,17 +25,17 @@ NSD_DIR = "{{ nsd_directory }}"
 ZONE_DIR = "{{ nsd_server_zones_dir }}"
 
 KSK_DIR = "{{ nsd_server_dnssec_key_dir }}/KSK"
-KSK_ALGO = "{{ nsd_zones_attributes[zone_name].dnssec.algo }}"
+KSK_ALGO = "{{ nsd_dnssec_algo }}"
 ZSK_DIR = "{{ nsd_server_dnssec_key_dir }}/ZSK"
-ZSK_ALGO = "{{ nsd_zones_attributes[zone_name].dnssec.algo }}"
+ZSK_ALGO = "{{ nsd_dnssec_algo }}"
 
 TTL_MARKER = "Refresh"
 EXP_MARKER = r"IN(\s)+RRSIG(\s)SOA"
 
-ZSK_ROLL_OVER = timedelta(days=7)
+ZSK_ROLL_OVER = timedelta(days={{ nsd_zsk_rollover | int }})
 ZSK_ROLL_OVER_WEEKDAY = 3  # Thursday
-ZSK_GRACE_PERIOD = timedelta(days=1)
-PROPAGATION_DELAY = timedelta(minutes=1)
+ZSK_GRACE_PERIOD = timedelta(days={{ nsd_zsk_grace_period | int }})
+PROPAGATION_DELAY = timedelta(hours={{ nsd_dnssec_propgation_delay | int }})
 
 DNS_TS_FORMAT = "%Y%m%d%H%M%S"
 

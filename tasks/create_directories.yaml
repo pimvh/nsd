@@ -1,0 +1,45 @@
+---
+- name: create nsd keys directory
+  file:
+    path: "{{ nsd_directory }}/keys"
+    owner: root
+    group: nsd
+    state: directory
+    mode: u=rwx,g=rx,o=x
+  become: true
+
+- name: create nsd keys ZSK and KSK directories
+  file:
+    path: "{{ nsd_directory }}/keys/{{ item }}"
+    owner: root
+    group: nsd
+    state: directory
+    mode: u=rwx,g=rx,o=x
+  loop:
+    - ZSK
+    - KSK
+  become: true
+
+- name: create nsd zones directory
+  file:
+    path: "{{ nsd_directory }}/zones"
+    owner: root
+    group: nsd
+    state: directory
+    mode: u=rwx,g=rx,o=rx
+  become: true
+
+- name: create tmp, db and pidfile directory
+  file:
+    path: "{{ nsd_directory }}/{{ dir }}"
+    owner: root
+    group: nsd
+    state: directory
+    mode: u=rwx,g=rwx,o=rx
+  become: true
+  loop:
+    - db
+    - tmp
+    - run
+  loop_control:
+    loop_var: dir

@@ -1,11 +1,31 @@
 ---
+- name: Rescope variables for readability
+  set_fact:
+    nsd_ttl: "{{ nsd_zone_attributes[zone_name].ttl }}"
+    nsd_dns_refresh: "{{ nsd_zone_attributes[zone_name].dns_refresh }}"
+    nsd_dns_retry: "{{ nsd_zone_attributes[zone_name].dns_retry }}"
+    nsd_dns_expire: "{{ nsd_zone_attributes[zone_name].dns_expire }}"
+    nsd_dns_negative_response_cache: "{{ nsd_zone_attributes[zone_name].dns_negative_response_cache }}"
+    nsd_make_ascii: "{{ nsd_zone_attributes[zone_name].make_ascii }}"
+    nsd_dkim_enabled: "{{ nsd_zone_attributes[zone_name].dkim_enabled }}"
+    nsd_dkim_domain: "{{ nsd_zone_attributes[zone_name].dkim_domain }}"
+    nsd_dkim_keys: "{{ nsd_zone_attributes[zone_name].dkim_keys }}"
+    nsd_dnssec_enabled: "{{ nsd_zone_attributes[zone_name].dnssec_enabled }}"
+    nsd_dnssec_algo: "{{ nsd_zone_attributes[zone_name].dnssec_algo }}"
+    nsd_zsk_rollover: "{{ nsd_zone_attributes[zone_name].zsk_rollover }}"
+    nsd_zsk_grace_period: "{{ nsd_zone_attributes[zone_name].zsk_grace_period }}"
+    nsd_dnssec_propagation_delay: "{{ nsd_zone_attributes[zone_name].dnssec_propagation_delay }}"
+    nsd_reverse_zone_enabled: "{{ nsd_zone_attributes[zone_name].reverse_zone_enabled }}"
+    nsd_reverse_zone_name_v4: "{{ nsd_zone_attributes[zone_name].reverse_zone_name_v4 }}"
+    nsd_reverse_zone_name_v6: "{{ nsd_zone_attributes[zone_name].reverse_zone_name_v6 }}"
+    nsd_records: "{{ lookup('vars', 'nsd_' + zone_name + '_records') }}"
+
 - include_tasks: dkim_keys.yaml
   loop: "{{ nsd_dkim_keys }}"
   loop_control:
     loop_var: dkim_key
   tags:
     - nsd_update
-  # only when dkim is defined and true
   when: nsd_dkim_enabled
 
 - name: move zone conf file to host
@@ -21,21 +41,21 @@
 - name: move reverse zone v4 conf file to host
   template:
     src: zone.rev4.j2
-    dest: "{{ nsd_directory }}/zones/{{ nsd_zones_attributes[zone_name].reverse_zone.name_v4 }}.zone"
-    validate: "/usr/sbin/nsd-checkzone {{ nsd_zones_attributes[zone_name].reverse_zone.name_v4 }} %s"
+    dest: "{{ nsd_directory }}/zones/{{ nsd_reverse_zone_name_v4 }}.zone"
+    validate: "/usr/sbin/nsd-checkzone {{ nsd_reverse_zone_name_v4 }} %s"
     owner: root
     group: nsd
     mode: u=rw,g=r,o=r
-  when: nsd_zones_attributes[zone_name].reverse_zone.enabled
+  when: nsd_reverse_zone_enabled
   notify: restart nsd
 
 - name: move reverse zone v6 conf file to host
   template:
     src: zone.rev6.j2
-    dest: "{{ nsd_directory }}/zones/{{ nsd_zones_attributes[zone_name].reverse_zone.name_v6 }}.zone"
-    validate: "/usr/sbin/nsd-checkzone {{ nsd_zones_attributes[zone_name].reverse_zone.name_v6 }} %s"
+    dest: "{{ nsd_directory }}/zones/{{ nsd_reverse_zone_name_v6 }}.zone"
+    validate: "/usr/sbin/nsd-checkzone {{ nsd_reverse_zone_name_v6 }} %s"
     owner: root
     group: nsd
     mode: u=rw,g=r,o=r
-  when: nsd_zones_attributes[zone_name].reverse_zone.enabled
+  when: nsd_reverse_zone_enabled
   notify: restart nsd

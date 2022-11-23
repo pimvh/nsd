@@ -1,6 +1,15 @@
 # https://ubuntu.com/server/docs/service-domain-name-service-dns
 # https://www.digitalocean.com/community/tutorials/how-to-configure-nsd-as-a-private-network-dns-server-on-debian-9
 ---
+- name: Assert required variables for role are defined
+  ansible.builtin.include_tasks:
+    file: assert.yaml
+    apply:
+      delegate_to: localhost
+      run_once: true
+  tags:
+    - nsd_assert
+
 - name: install required packages
   package:
     name:
@@ -14,56 +23,9 @@
   tags:
     - nsd_install
 
-- name: create nsd keys directory
-  file:
-    path: "{{ nsd_directory }}/keys"
-    owner: root
-    group: nsd
-    state: directory
-    mode: u=rwx,g=rx,o=x
-  become: true
-  tags:
-    - nsd_setup
-
-- name: create nsd keys ZSK and KSK directories
-  file:
-    path: "{{ nsd_directory }}/keys/{{ item }}"
-    owner: root
-    group: nsd
-    state: directory
-    mode: u=rwx,g=rx,o=x
-  loop:
-    - ZSK
-    - KSK
-  become: true
-  tags:
-    - nsd_setup
-
-- name: create nsd zones directory
-  file:
-    path: "{{ nsd_directory }}/zones"
-    owner: root
-    group: nsd
-    state: directory
-    mode: u=rwx,g=rx,o=rx
-  become: true
-  tags:
-    - nsd_setup
-
-- name: create tmp, db and pidfile directory
-  file:
-    path: "{{ nsd_directory }}/{{ dir }}"
-    owner: root
-    group: nsd
-    state: directory
-    mode: u=rwx,g=rwx,o=rx
-  become: true
-  loop:
-    - db
-    - tmp
-    - run
-  loop_control:
-    loop_var: dir
+- name: Create required directories
+  ansible.builtin.include_tasks:
+    file: create_directories.yaml
   tags:
     - nsd_setup
 
@@ -95,7 +57,7 @@
     file: move_zones.yaml
     apply:
       become: true
-  loop: "{{ nsd_zones_attributes.keys() }}"
+  loop: "{{ nsd_zones }}"
   loop_control:
     loop_var: zone_name
   tags:
