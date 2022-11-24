@@ -11,7 +11,7 @@
     - nsd_assert
 
 - name: install required packages
-  package:
+  ansible.builtin.package:
     name:
       - nsd
       - dnsutils
@@ -30,7 +30,7 @@
     - nsd_setup
 
 - name: check if certs are present
-  stat:
+  ansible.builtin.stat:
     path: "{{ cert_file }}"
   become: true
   loop:
@@ -45,7 +45,7 @@
     - nsd_setup
 
 - name: setup nsd-control
-  command: nsd-control-setup
+  ansible.builtin.command: nsd-control-setup
   become: true
   # only run when not all certs are present
   when: "not control_certs.results | map(attribute='stat') | map(attribute='exists') | all"
@@ -64,7 +64,7 @@
     - nsd_update
 
 - name: Do DNSSEC for zones when required
-  include_tasks:
+  ansible.builtin.include_tasks:
     file: dnssec.yaml
   when: zone_vars.dnssec.enabled is true
   loop: "{{ nsd_zone_attributes }}"
@@ -74,7 +74,7 @@
     - nsd_update
 
 - name: Move nsd.conf file template file to host
-  template:
+  ansible.builtin.template:
     src: conf.j2
     dest: "{{ nsd_directory }}/nsd.conf.d/nsd.conf"
     validate: "/usr/sbin/nsd-checkconf %s"
