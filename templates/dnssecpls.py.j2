@@ -32,10 +32,10 @@ ZSK_ALGO = "{{ nsd_dnssec_algo }}"
 TTL_MARKER = "Refresh"
 EXP_MARKER = r"IN(\s)+RRSIG(\s)SOA"
 
-ZSK_ROLL_OVER = timedelta(days={{ nsd_zsk_rollover | int }})
+ZSK_ROLL_OVER = timedelta(days={{nsd_zsk_rollover | int}})
 ZSK_ROLL_OVER_WEEKDAY = 3  # Thursday
-ZSK_GRACE_PERIOD = timedelta(days={{ nsd_zsk_grace_period | int }})
-PROPAGATION_DELAY = timedelta(hours={{ nsd_dnssec_propgation_delay | int }})
+ZSK_GRACE_PERIOD = timedelta(days={{nsd_zsk_grace_period | int}})
+PROPAGATION_DELAY = timedelta(hours={{nsd_dnssec_propagation_delay | int}})
 
 DNS_TS_FORMAT = "%Y%m%d%H%M%S"
 

@@ -9,20 +9,26 @@
   changed_when: false
   diff: false
   loop:
-    - nsd_zone_attributes[zone_name].ttl
-    - nsd_zone_attributes[zone_name].dns_refresh
-    - nsd_zone_attributes[zone_name].dns_retry
-    - nsd_zone_attributes[zone_name].dns_expire
-    - nsd_zone_attributes[zone_name].dns_negative_response_cache
+    - nsd_zone_vars.name
+    - nsd_zone_vars.ttl
+    - nsd_zone_vars.dns_refresh
+    - nsd_zone_vars.dns_retry
+    - nsd_zone_vars.dns_expire
+    - nsd_zone_vars.dns_negative_response_cache
+
+- name: Set zone name variable and construct zone_records variable name
+  ansible.builtin.set_fact:
+    nsd_zone_name: "{{ nsd_zone_vars.name }}"
+    nsd_zone_records_name: "{{ 'nsd_' + nsd_zone_vars.name | replace('.', '_') + '_records' }}"
 
 - name: Verify that required zone records are defined
   assert:
     that:
-      - "{{ lookup('ansible.builtin.vars', 'nsd_' + zone_name + '_records', default='') }} is defined"
-      - "{{ lookup('ansible.builtin.vars', 'nsd_' + zone_name + '_records', default='') }} | length > 0"
-      - "{{ lookup('ansible.builtin.vars', 'nsd_' + zone_name + '_records', default='') }} != None"
-    fail_msg: "nsd_{{ zone_name }}_records needs to be set for the role to work"
-    success_msg: "Required variable nsd_{{ zone_name }}_records is defined"
+      - "{{ lookup('ansible.builtin.vars', 'nsd_zone_records_name', default='') }} | list is defined"
+      - "{{ lookup('ansible.builtin.vars', 'nsd_zone_records_name', default='') }} | list |  length > 0"
+      - "{{ lookup('ansible.builtin.vars', 'nsd_zone_records_name', default='') }} | list != None"
+    fail_msg: "{{ nsd_zone_records_name }} needs to be set for the role to work"
+    success_msg: "Required variable {{ nsd_zone_records_name }} is defined"
   changed_when: false
   diff: false
 
@@ -37,9 +43,9 @@
   changed_when: false
   diff: false
   loop:
-    - nsd_zone_attributes[zone_name].dkim_domain
-    - nsd_zone_attributes[zone_name].dkim_keys
-  when: nsd_zone_attributes[zone_name].dkim_enabled is sameas true
+    - nsd_zone_vars.dkim_domain
+    - nsd_zone_vars.dkim_keys
+  when: nsd_zone_vars.dkim_enabled is sameas true
 
 - name: Verify that required reverse zone attributes are defined
   assert:
@@ -52,9 +58,9 @@
   changed_when: false
   diff: false
   loop:
-    - nsd_zone_attributes[zone_name].reverse_zone_name_v4
-    - nsd_zone_attributes[zone_name].reverse_zone_name_v6
-  when: nsd_zone_attributes[zone_name].reverse_zone_enabled is sameas true
+    - nsd_zone_vars.reverse_zone_name_v4
+    - nsd_zone_vars.reverse_zone_name_v6
+  when: nsd_zone_vars.reverse_zone_enabled is sameas true
 
 - name: Verify that required DNSSEC zone attributes are defined
   assert:
@@ -67,8 +73,8 @@
   changed_when: false
   diff: false
   loop:
-    - nsd_zone_attributes[zone_name].dnssec_algo
-    - nsd_zone_attributes[zone_name].zsk_rollover
-    - nsd_zone_attributes[zone_name].zsk_grace_period
-    - nsd_zone_attributes[zone_name].dnssec_propagation_delay
-  when: nsd_zone_attributes[zone_name].dnssec_enabled is sameas true
+    - nsd_zone_vars.dnssec_algo
+    - nsd_zone_vars.zsk_rollover
+    - nsd_zone_vars.zsk_grace_period
+    - nsd_zone_vars.dnssec_propagation_delay
+  when: nsd_zone_vars.dnssec_enabled is sameas true

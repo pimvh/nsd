@@ -1,11 +1,11 @@
 {{ ansible_managed | comment(decoration=";") }}
-; NSD data file for {{ zone_name }}
+; NSD data file for {{ nsd_zone_name }}
 ;
 
-$ORIGIN {{ zone_name }}.; 'default' record as FQDN for this zone
+$ORIGIN {{ nsd_zone_name }}.; 'default' record as FQDN for this zone
 $TTL {{ nsd_ttl }}; default time-to-live for this zone
 
-{{ zone_name }}.   IN  SOA  ns1.{{ zone_name }}. hostmaster.{{ zone_name }}. (
+{{ nsd_zone_name }}.   IN  SOA  ns1.{{ nsd_zone_name }}. hostmaster.{{ nsd_zone_name }}. (
         {{ _dns_serial }} ; Serial
         {{ nsd_dns_refresh }} ; Refresh
         {{ nsd_dns_retry }} ; Retry
@@ -60,7 +60,7 @@ $TTL {{ nsd_ttl }}; default time-to-live for this zone
 {% if nsd_make_ascii is defined %}
 {% if nsd_make_ascii %}
 ; Fun stuff
-{% for line in lookup('file', zone_name + '/ascii-art.txt').splitlines() %}
+{% for line in lookup('file', nsd_zone_name + '/ascii-art.txt').splitlines() %}
 ascii NAPTR {{ 100 + 10 * loop.index0 }} 10 "" "{{ line }}" "" .
 {% endfor %}
 {% endif %}

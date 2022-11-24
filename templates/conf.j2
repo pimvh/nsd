@@ -33,10 +33,10 @@ remote-control:
     control-cert-file: "{{ nsd_directory }}/nsd_control.pem"
 {% endif %}
 
-{% for name, config in nsd_zone_attributes.items() %}
+{% for config in nsd_zone_attributes %}
 zone:
-    name: {{ name }}
-    zonefile: {{ name }}.zone{% if config.dnssec_enabled %}.signed{% endif +%}
+    name: {{ config.name  }}
+    zonefile: {{ config.name }}.zone{% if config.dnssec_enabled %}.signed{% endif +%}
 {% if config.notify is defined %}
     notify: {{ config.notify.ip }} {{ config.notify.value}}
     request-xfr: {{ config.notify.ip }} {{ config.notify.value}}

@@ -1,9 +1,9 @@
 [Unit]
 Description=Run dnssecpls on weekly interval
-Requires=dnssecpls@{{ zone_name }}.service
+Requires=dnssecpls@{{ nsd_zone_name }}.service
 
 [Timer]
-Unit=dnssecpls@{{ zone_name }}.service
+Unit=dnssecpls@{{ nsd_zone_name }}.service
 OnCalendar=Thursday *-*-* 12:00:00
 Persistent=true
 

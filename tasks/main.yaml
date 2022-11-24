@@ -57,19 +57,19 @@
     file: move_zones.yaml
     apply:
       become: true
-  loop: "{{ nsd_zones }}"
+  loop: "{{ nsd_zone_attributes }}"
   loop_control:
-    loop_var: zone_name
+    loop_var: nsd_zone_vars
   tags:
     - nsd_update
 
 - name: Do DNSSEC for zones when required
   include_tasks:
     file: dnssec.yaml
-  when: nsd_zones_attributes[zone_name].dnssec.enabled is true
-  loop: "{{ nsd_zones_attributes.keys() }}"
+  when: zone_vars.dnssec.enabled is true
+  loop: "{{ nsd_zone_attributes }}"
   loop_control:
-    loop_var: zone_name
+    loop_var: nsd_zone_vars
   tags:
     - nsd_update
 

@@ -26,11 +26,9 @@ Variable structure:
 
 ```
 # list of all zones
-nsd_zones:
-  - "bastia.prac.os3.nl"
 
 nsd_zone_attributes:
-  bastia.prac.os3.nl:
+  - name: "<< zone_name >>"
     ttl: 300
     dns_refresh: 300
     dns_retry: 300
@@ -49,7 +47,7 @@ nsd_zone_attributes:
     reverse_zone_name_v4: "{{ assigned_range_ipv4 | get_rev_dns_origin }}" <-- Use supplied filter to calculate rev dns for a zone,
     reverse_zone_name_v6: "{{ assigned_range_ipv6 | get_rev_dns_origin(version=6) }}" <-- idem, but for v6.
 
-"nsd_<< your zone >>_records":
+"nsd_<< your zone with _ instead of . >>_records":
   - id: "@"
     type: NS
     record: "ns1"
@@ -64,7 +62,7 @@ nsd_zone_attributes:
   - id: "@"
     type: MX
     value: 10
-    record: "{{ zone_name | default('') }}." <-- you can use the name of the zone in here
+    record: "{{ nsd_zone_name | default('') }}." <-- you can use the name of the zone in here
     type: CNAME
     record: "@"
 # e.g. SPF record:
@@ -79,7 +77,7 @@ nsd_zone_attributes:
 
 # TLDR - What will happen if I run this
 
-- validate whether variables are all right
+- validate whether variables are all defined
 - install nsd (nsd_install set)
 - create a bunch of required directories for NSD and ZSK and KSK organisation
 - setup nsd-control with certificates
