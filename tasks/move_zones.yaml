@@ -25,6 +25,7 @@
         nsd_zsk_rollover: "{{ nsd_zone_vars.zsk_rollover }}"
         nsd_zsk_grace_period: "{{ nsd_zone_vars.zsk_grace_period }}"
         nsd_dnssec_propagation_delay: "{{ nsd_zone_vars.dnssec_propagation_delay }}"
+        nsd_dnssec_algo: "{{ nsd_zone_vars.dnssec_algo }}"
       when: nsd_dnssec_enabled
 
     - name: Rescope reverse zone variables
