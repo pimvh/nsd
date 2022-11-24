@@ -16,6 +16,21 @@
     - nsd_zone_vars.dns_expire
     - nsd_zone_vars.dns_negative_response_cache
 
+- name: Verify that required DNS zone boolean attributes are defined
+  ansible.builtin.assert:
+    that:
+      - "{{ item }} is defined"
+      - "{{ item }} != None"
+    fail_msg: "{{ item }} needs to be set for the role to work"
+    success_msg: "Required variable {{ item }} is defined"
+  changed_when: false
+  diff: false
+  loop:
+    - nsd_zone_vars.dkim_enabled
+    - nsd_zone_vars.reverse_zone_v4_enabled
+    - nsd_zone_vars.reverse_zone_v6_enabled
+    - nsd_zone_vars.dnssec_enabled
+
 - name: Set zone name variable and construct zone_records variable name
   ansible.builtin.set_fact:
     nsd_zone_name: "{{ nsd_zone_vars.name }}"
@@ -58,9 +73,22 @@
   changed_when: false
   diff: false
   loop:
-    - nsd_zone_vars.reverse_zone_name_v4
-    - nsd_zone_vars.reverse_zone_name_v6
-  when: nsd_zone_vars.reverse_zone_enabled is sameas true
+    - nsd_zone_vars.reverse_zone_v4_name
+  when: nsd_zone_vars.reverse_zone_v4_enabled is sameas true
+
+- name: Verify that required reverse zone attributes are defined
+  ansible.builtin.assert:
+    that:
+      - "{{ item }} is defined"
+      - "{{ item }} | length > 0"
+      - "{{ item }} != None"
+    fail_msg: "{{ item }} needs to be set for the role to work"
+    success_msg: "Required variable {{ item }} is defined"
+  changed_when: false
+  diff: false
+  loop:
+    - nsd_zone_vars.reverse_zone_v6_name
+  when: nsd_zone_vars.reverse_zone_v6_enabled is sameas true
 
 - name: Verify that required DNSSEC zone attributes are defined
   ansible.builtin.assert:

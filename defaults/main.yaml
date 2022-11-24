@@ -38,9 +38,10 @@ nsd_default_dnssec_enabled: false
 nsd_default_zsk_rollover: "7"
 nsd_default_zsk_grace_period: "1"
 nsd_default_dnssec_propagation_delay: "24"
-nsd_default_reverse_zone_enabled: false
-nsd_default_reverse_zone_name_v4: ""
-nsd_default_reverse_zone_name_v6: ""
+nsd_default_reverse_zone_v4_enabled: false
+nsd_default_reverse_zone_v6_enabled: false
+nsd_default_reverse_zone_v4_name: ""
+nsd_default_reverse_zone_v6_name: ""
 
 # magic to generate DNS serial (bliss)
 _today: "{{ lookup('pipe','gdate +%Y%m%d') }}"

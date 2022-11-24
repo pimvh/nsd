@@ -1,10 +1,10 @@
 {{ ansible_managed | comment(decoration=';') }}
-; NSD data file for {{ nsd_reverse_zone_name_v4 }}
+; NSD data file for {{ nsd_reverse_zone_v4_name }}
 
-$ORIGIN {{ nsd_reverse_zone_name_v4 }}.; 'default' record as FQDN for this zone
+$ORIGIN {{ nsd_reverse_zone_v4_name }}.; 'default' record as FQDN for this zone
 $TTL {{ nsd_ttl }}; default time-to-live for this zone
 
-{{ nsd_reverse_zone_name_v4 }}.   in  SOA  ns1.{{ nsd_zone_name }}. hostmaster.{{ nsd_zone_name }}. (
+{{ nsd_reverse_zone_v4_name }}.   in  SOA  ns1.{{ nsd_zone_name }}. hostmaster.{{ nsd_zone_name }}. (
         {{ _dns_serial }}  ; Serial
         {{ nsd_dns_refresh }} ; Refresh
         {{ nsd_dns_retry }} ; Retry
@@ -18,6 +18,6 @@ $TTL {{ nsd_ttl }}; default time-to-live for this zone
 ; PTR records
 {% for record in nsd_records | selectattr("type", "equalto", "A") %}
 {% if not (record.id == '@' and record.record is defined) and not record.no_ptr is defined %}
-{{"%s\tPTR\t%s.%s." % (record.record | ansible.utils.ipaddr('revdns') | replace('.' + nsd_reverse_zone_name_v4 + '.', ''), record.id, nsd_zone_name )}}
+{{"%s\tPTR\t%s.%s." % (record.record | ansible.utils.ipaddr('revdns') | replace('.' + nsd_reverse_zone_v4_name + '.', ''), record.id, nsd_zone_name )}}
 {% endif %}
 {% endfor %}

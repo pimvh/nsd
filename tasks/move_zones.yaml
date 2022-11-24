@@ -12,7 +12,8 @@
         nsd_make_ascii: "{{ nsd_zone_vars.make_ascii }}"
         nsd_dkim_enabled: "{{ nsd_zone_vars.dkim_enabled }}"
         nsd_dnssec_enabled: "{{ nsd_zone_vars.dnssec_enabled }}"
-        nsd_reverse_zone_enabled: "{{ nsd_zone_vars.reverse_zone_enabled }}"
+        nsd_reverse_zone_v4_enabled: "{{ nsd_zone_vars.reverse_zone_v4_enabled }}"
+        nsd_reverse_zone_v6_enabled: "{{ nsd_zone_vars.reverse_zone_v6_enabled }}"
 
     - name: Rescope DKIM variables
       ansible.builtin.set_fact:
@@ -28,11 +29,17 @@
         nsd_dnssec_algo: "{{ nsd_zone_vars.dnssec_algo }}"
       when: nsd_dnssec_enabled
 
-    - name: Rescope reverse zone variables
+    - name: Rescope reverse zone v4 variables
       ansible.builtin.set_fact:
-        nsd_reverse_zone_name_v4: "{{ nsd_zone_vars.reverse_zone_name_v4 }}"
-        nsd_reverse_zone_name_v6: "{{ nsd_zone_vars.reverse_zone_name_v6 }}"
-      when: nsd_reverse_zone_enabled
+        nsd_reverse_zone_v4_name: "{{ nsd_zone_vars.reverse_zone_v4_name }}"
+        nsd_reverse_zone_v6_name: "{{ nsd_zone_vars.reverse_zone_v6_name }}"
+      when: nsd_reverse_zone_v4_enabled
+
+    - name: Rescope reverse zone v6 variables
+      ansible.builtin.set_fact:
+        nsd_reverse_zone_v4_name: "{{ nsd_zone_vars.reverse_zone_v4_name }}"
+        nsd_reverse_zone_v6_name: "{{ nsd_zone_vars.reverse_zone_v6_name }}"
+      when: nsd_reverse_zone_v4_enabled
 
 - name: Rescope records variable for readability
   ansible.builtin.set_fact:
@@ -59,23 +66,23 @@
 - name: move reverse zone v4 config file to host
   ansible.builtin.template:
     src: zone.rev4.j2
-    dest: "{{ nsd_directory }}/zones/{{ nsd_reverse_zone_name_v4 }}.zone"
-    validate: "/usr/sbin/nsd-checkzone {{ nsd_reverse_zone_name_v4 }} %s"
+    dest: "{{ nsd_directory }}/zones/{{ nsd_reverse_zone_v4_name }}.zone"
+    validate: "/usr/sbin/nsd-checkzone {{ nsd_reverse_zone_v4_name }} %s"
     owner: root
     group: nsd
     mode: u=rw,g=r,o=r
-  when: nsd_reverse_zone_enabled
+  when: nsd_reverse_zone_v4_enabled
   notify: restart nsd
 
 - name: move reverse zone v6 config file to host
   ansible.builtin.template:
     src: zone.rev6.j2
-    dest: "{{ nsd_directory }}/zones/{{ nsd_reverse_zone_name_v6 }}.zone"
-    validate: "/usr/sbin/nsd-checkzone {{ nsd_reverse_zone_name_v6 }} %s"
+    dest: "{{ nsd_directory }}/zones/{{ nsd_reverse_zone_v6_name }}.zone"
+    validate: "/usr/sbin/nsd-checkzone {{ nsd_reverse_zone_v6_name }} %s"
     owner: root
     group: nsd
     mode: u=rw,g=r,o=r
-  when: nsd_reverse_zone_enabled
+  when: nsd_reverse_zone_v6_enabled
   notify: restart nsd
 
 - name: Do DNSSEC for zones when required

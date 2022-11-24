@@ -42,18 +42,20 @@ zone:
     request-xfr: {{ config.notify.ip }} {{ config.notify.value}}
 {% endif %}
 
-{% if config.reverse_zone_enabled %}
+{% if config.reverse_zone_v4_enabled %}
 zone:
-    name: {{ config.reverse_zone_name_v4 }}
-    zonefile: {{ config.reverse_zone_name_v4 }}.zone
+    name: {{ config.reverse_zone_v4_name }}
+    zonefile: {{ config.reverse_zone_v4_name }}.zone
 {% if config.notify is defined %}
     notify: {{ config.notify.ip }} {{ config.notify.value}}
     request-xfr: {{ config.notify.ip }} {{ config.notify.value}}
 {% endif %}
+{% endif %}
 
+{% if config.reverse_zone_v6_enabled %}
 zone:
-    name: {{ config.reverse_zone_name_v6 }}
-    zonefile: {{ config.reverse_zone_name_v6 }}.zone
+    name: {{ config.reverse_zone_v6_name }}
+    zonefile: {{ config.reverse_zone_v6_name }}.zone
 {% if config.notify is defined %}
     notify: {{ config.notify.ip }} {{ config.notify.value}}
     request-xfr: {{ config.notify.ip }} {{ config.notify.value}}
