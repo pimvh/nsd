@@ -32,14 +32,12 @@
     - name: Rescope reverse zone v4 variables
       ansible.builtin.set_fact:
         nsd_reverse_zone_v4_name: "{{ nsd_zone_vars.reverse_zone_v4_name }}"
-        nsd_reverse_zone_v6_name: "{{ nsd_zone_vars.reverse_zone_v6_name }}"
       when: nsd_reverse_zone_v4_enabled
 
     - name: Rescope reverse zone v6 variables
       ansible.builtin.set_fact:
-        nsd_reverse_zone_v4_name: "{{ nsd_zone_vars.reverse_zone_v4_name }}"
         nsd_reverse_zone_v6_name: "{{ nsd_zone_vars.reverse_zone_v6_name }}"
-      when: nsd_reverse_zone_v4_enabled
+      when: nsd_reverse_zone_v6_enabled
 
 - name: Rescope records variable for readability
   ansible.builtin.set_fact:
