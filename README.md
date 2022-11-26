@@ -89,7 +89,9 @@ nsd_zone_attributes:
 - Allow non authorative zones and key directives
 - Improve sane defaults of variables (see defaults defined in defaults/main.yaml)
 - Allow TTL to be passed in records
+- Add automated KSK rollover to dnssecpls script
 - Allow duplicates of dnssecpls script with different variables from ZSK rollover etc as specified in nsd_zone_attributes
+- Only update serial when required, instead of when running role
 
 # License
 
