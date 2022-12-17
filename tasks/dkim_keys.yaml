@@ -1,12 +1,12 @@
-- name: fetch all DKIM keys for the zonefile
+- name: Fetch all DKIM keys for the zonefile
   block:
     - name: Read remote dkim key records {{ dkim_key.name }}
-      command: "cat {{ '/etc/dkimkeys/' + nsd_dkim_domain + '/' + dkim_key.name + '.txt' }}"
+      ansible.builtin.command: "cat {{ '/etc/dkimkeys/' + nsd_dkim_domain + '/' + dkim_key.name + '.txt' }}"
       changed_when: false
       check_mode: false
       become: true
       register: dkim_cat
 
-    - name: append key to list of dkim_keys
-      set_fact:
-        nsd_dkim_records: "{{ nsd_dkim_records | default([]) + [ dkim_cat.stdout ] }}"
+    - name: Append key to list of dkim_keys
+      ansible.builtin.set_fact:
+        nsd_dkim_records: "{{ nsd_dkim_records | default([]) + [dkim_cat.stdout] }}"

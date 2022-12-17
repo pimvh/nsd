@@ -1,0 +1,13 @@
+{{ ansible_managed | comment }}
+
+[Unit]
+Description=Run zskrollover on weekly interval
+Requires=zskrollover@{{ nsd_zone_name }}.service
+
+[Timer]
+Unit=zskrollover@{{ nsd_zone_name }}.service
+OnCalendar=Thursday *-*-* 12:00:00
+Persistent=true
+
+[Install]
+WantedBy=timers.target

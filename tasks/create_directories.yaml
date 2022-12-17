@@ -1,6 +1,6 @@
 ---
-- name: create nsd keys directory
-  file:
+- name: Create nsd keys directory
+  ansible.builtin.file:
     path: "{{ nsd_directory }}/keys"
     owner: root
     group: nsd
@@ -8,8 +8,8 @@
     mode: u=rwx,g=rx,o=x
   become: true
 
-- name: create nsd keys ZSK and KSK directories
-  file:
+- name: Create nsd keys ZSK and KSK directories
+  ansible.builtin.file:
     path: "{{ nsd_directory }}/keys/{{ item }}"
     owner: root
     group: nsd
@@ -20,8 +20,8 @@
     - KSK
   become: true
 
-- name: create nsd zones directory
-  file:
+- name: Create nsd zones directory
+  ansible.builtin.file:
     path: "{{ nsd_directory }}/zones"
     owner: root
     group: nsd
@@ -29,8 +29,8 @@
     mode: u=rwx,g=rx,o=rx
   become: true
 
-- name: create tmp, db and pidfile directory
-  file:
+- name: Create tmp, db and pidfile directory
+  ansible.builtin.file:
     path: "{{ nsd_directory }}/{{ dir }}"
     owner: root
     group: nsd

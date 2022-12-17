@@ -1,0 +1,692 @@
+#!/bin/env python3
+"""
+{{ ansible_managed }}
+
+Inspired by:
+- https://github.com/jeroenh/signzone/blob/master/signzone.sh
+- https://www.digitalocean.com/community/tutorials/how-to-set-up-dnssec-on-an-nsd-nameserver-on-ubuntu-14-04
+Thanks Jeroen van der Ham and Digital Ocean :)
+"""
+
+import argparse
+from datetime import datetime, timedelta
+import logging
+import os
+from pathlib import Path
+import re
+import subprocess
+import sys
+import time
+
+logging.basicConfig(level="INFO")
+logger = logging.getLogger()
+
+# Globals
+NSD_DIR = "{{ nsd_directory }}"
+ZONE_DIR = "{{ nsd_server_zones_dir }}"
+
+KSK_DIR = "{{ nsd_server_dnssec_key_dir }}/KSK"
+ZSK_DIR = "{{ nsd_server_dnssec_key_dir }}/ZSK"
+
+TTL_MARKER = "Refresh"
+EXP_MARKER = r"IN(\s)+RRSIG(\s)SOA"
+
+DNS_TS_FORMAT = "%Y%m%d%H%M%S"
+
+
+def get_key_filenames(directory: str, domain: str):
+    """get the basename of the keyfiles from the specified directory,
+    return the list"""
+
+    key_files = []
+
+    for _, _, filenames in os.walk(directory):
+
+        for filename in filenames:
+            if domain in filename:
+
+                # only append filename not whole filename
+                key_files.append(Path(filename).stem)
+
+    # sort the keyfile, with newest IDs first
+    key_files.sort(reverse=True)
+
+    key_files = list(set(key_files))
+
+    return key_files
+
+
+def get_keys(
+    directory: str,
+    domain: str,
+    key_algo: str,
+    ksk=False,
+    amount_of_keys: int = 2,
+    keep_current_keys: bool = False,
+) -> list[str]:
+    """
+
+    Args:
+        directory (str):
+        domain (str):
+
+    Returns: list of zone keys
+
+    """
+
+    if ksk:
+        logger.info("getting key signing keys...")
+    else:
+        logger.info("getting zone signing keys...")
+
+    current_keys = get_key_filenames(directory, domain)
+
+    if ksk:
+        extensions = {"ds", "key", "private"}
+    else:
+        extensions = {"key", "private"}
+
+    if keep_current_keys:
+        while len(current_keys) > amount_of_keys:
+
+            old_key = current_keys.pop()
+
+            try:
+                for ext in extensions:
+                    subprocess.run(["rm", f"{directory}/{old_key}.{ext}"], check=True)
+
+            except subprocess.CalledProcessError as e:
+                logger.exception("Error removing old key: %s", e)
+                raise
+
+            current_keys = get_key_filenames(directory, domain)
+    else:
+        while len(current_keys) >= amount_of_keys:
+            old_key = current_keys.pop()
+
+            try:
+                for ext in extensions:
+                    subprocess.run(["rm", f"{directory}/{old_key}.{ext}"], check=True)
+            except subprocess.CalledProcessError as e:
+                logger.exception("Error removing old key: %s", e)
+                raise
+
+            current_keys = get_key_filenames(directory, domain)
+
+    while not len(current_keys) == amount_of_keys:
+
+        os.chdir(directory)
+
+        try:
+            if ksk:
+                subprocess.run(
+                    ["ldns-keygen", "-a", key_algo, "-k", domain], check=True
+                )
+            else:
+                subprocess.run(["ldns-keygen", "-a", key_algo, domain], check=True)
+        except subprocess.CalledProcessError as e:
+            logger.exception("Error creating key: %s", e)
+
+        os.chdir(NSD_DIR)
+        time.sleep(3)
+
+        current_keys = get_key_filenames(directory, domain)
+
+    return current_keys
+
+
+def increment_serial(file):
+    """replace pattern in file, taken from
+    https://stackoverflow.com/questions/39086/search-and-replace-a-line-in-a-file-in-python"""
+
+    # Read contents from file as a single string
+    file_handle = open(file, "r")
+    file_string = file_handle.read()
+    file_handle.close()
+
+    # Use RE package to allow for replacement (also allowing for (multiline) REGEX)
+    file_string = re.sub(
+        r"^(\s+)(\d+)(\s*;\s*Serial\s*)$",
+        lambda exp: f"        {int(exp.groups()[1]) + 1} ; Serial",
+        file_string,
+        flags=re.IGNORECASE | re.MULTILINE,
+    )
+
+    # Write contents to file.
+    # Using mode 'w' truncates the file.
+    file_handle = open(file, "w")
+    file_handle.write(file_string)
+    file_handle.close()
+
+
+def get_zone_signing_keys(
+    directory: str,
+    domain: str,
+    key_algo: str,
+    num_of_keys: int = 2,
+    keep_current_keys: bool = False,
+) -> list[str]:
+    """get the zone signing keys"""
+    return get_keys(
+        directory,
+        domain,
+        key_algo,
+        ksk=False,
+        amount_of_keys=num_of_keys,
+        keep_current_keys=keep_current_keys,
+    )
+
+
+def get_key_signing_keys(
+    directory: str,
+    domain: str,
+    key_algo: str,
+    num_of_keys: int = 1,
+    keep_current_keys: bool = False,
+) -> list[str]:
+    """get the key signing keys"""
+    return get_keys(
+        directory,
+        domain,
+        key_algo,
+        ksk=True,
+        amount_of_keys=num_of_keys,
+        keep_current_keys=keep_current_keys,
+    )
+
+
+def grep_zone(domain: str):
+    """find TTL based on marker 'refresh'"""
+
+    try:
+        grepper = subprocess.run(
+            f'cat {ZONE_DIR}/{domain}.zone | grep -i "{TTL_MARKER}"',
+            capture_output=True,
+            shell=True,
+            check=True,
+        )
+
+        # split num; TTL -> num
+        ttl = grepper.stdout.decode("utf-8").split(";")[0].strip()
+
+        grepper = subprocess.run(
+            f'cat {ZONE_DIR}/{domain}.zone.signed | egrep -i "{EXP_MARKER}"',
+            capture_output=True,
+            shell=True,
+            check=True,
+        )
+
+        # find time (IN DNSKEY record)
+        expire_dns_ts = grepper.stdout.decode("utf-8")
+
+        # Record - TTL - IN - RRSIG
+        # Type - Algorithm - TLL - Signature, so place 8
+        expire_dns_ts = expire_dns_ts.split()[8].strip()
+        expire = datetime.strptime(expire_dns_ts, DNS_TS_FORMAT)
+
+        return ttl, expire
+
+    except subprocess.CalledProcessError as e:
+        logger.exception("Error grepping zonefile: %s", e)
+
+        return None, None
+
+
+def sign_zone(domain: str, zsks: list[str], ksks: list[str], expiration):
+    """sign domain with given KSK and ZSK"""
+
+    today = datetime.now() - timedelta(minutes=5)
+
+    try:
+        # increment serial of unsigned zonefile
+        increment_serial(f"{ZONE_DIR}/{domain}.zone")
+
+        logger.info("signing zone: %s", domain)
+
+        # actually sign zone
+        subprocess.run(
+            f"ldns-signzone -b "
+            + f"-i {today.timestamp()} -e {expiration.timestamp()} -n "
+            + f"-s $(head -n 1001 /dev/random | sha1sum | cut -b 1-16) -f {ZONE_DIR}/{domain}.zone.signed "
+            + f"{ZONE_DIR}/{domain}.zone "
+            + " ".join([f"{ZSK_DIR}/{zsk}" for zsk in zsks])
+            + " "
+            + " ".join([f"{KSK_DIR}/{ksk}" for ksk in ksks]),
+            check=True,
+            shell=True,
+        )
+
+    except subprocess.CalledProcessError as e:
+        logger.exception("Error running signzone: %s", e)
+        raise
+
+    logger.info("signed domain: %s", domain)
+
+
+def reload_zone(domain: str):
+    """reload the given nsd zone"""
+
+    try:
+        subprocess.run(["/usr/sbin/nsd-control", "reload", str(domain)], check=True)
+    except subprocess.CalledProcessError as e:
+        logger.exception("Error reloading zone: %s", e)
+
+    logger.info("reloaded zone: %s", domain)
+
+
+def ksk_rollover(args) -> None:
+    """do a key signing key roll over"""
+
+    raise NotImplemented("Still to finish")
+
+    # TODO refactor
+    # ksk_grace_period, propagation_delay, ksk_validity_period = (
+    #     timedelta(hours=args.ksk_grace_period),
+    #     timedelta(hours=args.propagation_delay),
+    #     timedelta(hours=args.ksk_validity_period),
+    # )
+    #
+    # zsks = get_zone_signing_keys(
+    #     ZSK_DIR, args.domain, key_algo=args.key_algo, num_of_keys=args.num_zsk
+    # )
+    # ksks = get_key_signing_keys(
+    #     KSK_DIR,
+    #     args.domain,
+    #     num_of_keys=args.num_ksk,
+    #     key_algo=args.key_algo,
+    #     keep_current_keys=True,
+    # )
+    #
+    # ttl, expire = grep_zone(args.domain)
+    #
+    # if not ttl or not expire:
+    #     logger.info("TTL or expiration not found in zone file!")
+    #     sys.exit(1)
+    #
+    # now = datetime.now()
+    #
+    # # set rollover at 12 noon
+    # new_expiration = (
+    #     now.replace(hour=12, minute=0, second=0, microsecond=0)
+    #     + ksk_validity_period
+    #     + ksk_grace_period
+    # )
+    #
+    # if not now.date() == expire.date() - ksk_grace_period:
+    #     logger.info(
+    #         "Forced rollover, next date should have been %s, %s instead",
+    #         now.date(),
+    #         expire.date(),
+    #     )
+    # else:
+    #     logger.info("Planned rollover.")
+    #
+    # logger.info(
+    #     "Intermediary signing of zone %s with keys: ZSK: (%s) KSK: (%s) with validity: %s",
+    #     args.domain,
+    #     " ".join(zsks),
+    #     " ".join(ksks),
+    #     now + timedelta(days=1),
+    # )
+    #
+    # # calculate waiting time, based on zone max TTL and propagation delay
+    # waiting_time_delta = timedelta(seconds=int(ttl)) + propagation_delay
+    # waiting_time = int(waiting_time_delta.total_seconds())
+    #
+    # # sign args.domain with both keys
+    # sign_zone(args.domain, zsks, ksks, now + waiting_time_delta)
+    # reload_zone(args.domain)
+    #
+    # logger.info("Sleeping TTL of zone + propagation delay : %s ", waiting_time)
+    # time.sleep(waiting_time)
+    #
+    # # discard oldest key
+    # oldest_key = zsks.pop()
+    #
+    # # sign the zone only with the newest key(s)
+    # logger.info(
+    #     "Signing zone %s with keys: ZSK: (%s) KSK: (%s) until: %s",
+    #     args.domain,
+    #     " ".join(zsks),
+    #     " ".join(ksks),
+    #     now + timedelta(days=1),
+    # )
+    #
+    # sign_zone(args.domain, [zsks[0]], ksks, new_expiration)
+    #
+    # logger.info(
+    #     "Signing zone %s succeeded",
+    #     args.domain,
+    # )
+    #
+    # logger.info("Reloading zone %s", args.domain)
+    # reload_zone(args.domain)
+    #
+    # logger.info(
+    #     "Reloaded zone %s",
+    #     args.domain,
+    # )
+    #
+    # if not args.keep_old_keys:
+    #
+    #     logger.info("Removing oldest key: %s", ZSK_DIR + "/" + oldest_key)
+    #
+    #     extensions = {"key", "private"}
+    #
+    #     try:
+    #         for ext in extensions:
+    #             subprocess.run(["rm", f"{ZSK_DIR}/{oldest_key}.{ext}"], check=True)
+    #
+    #     except subprocess.CalledProcessError as e:
+    #         logger.exception("Error reloading zone: %s", e)
+    #
+    #     logger.info("Removed oldest key: %s", ZSK_DIR + "/" + oldest_key)
+
+
+def create_signed_zone(args) -> None:
+    """creates the signed zone"""
+
+    zsks = get_zone_signing_keys(
+        ZSK_DIR,
+        args.domain,
+        args.key_algo,
+        num_of_keys=args.num_zsk,
+        keep_current_keys=True,
+    )
+    ksks = get_key_signing_keys(
+        KSK_DIR,
+        args.domain,
+        args.key_algo,
+        num_of_keys=args.num_ksk,
+        keep_current_keys=True,
+    )
+
+    zsk_grace_period = timedelta(hours=args.zsk_grace_period)
+
+    now = datetime.now()
+
+    if not (now.weekday == args.zsk_rotation_day) or (
+        now.weekday == args.zsk_rotation_day and now.hour < 12
+    ):
+        now += timedelta(days=1)
+
+        # fetch next fixed day
+        while not now.weekday() == args.zsk_rotation_day:
+            now += timedelta(days=1)
+
+    # when it is already that day before 12, the rotation is today.
+    # expire is today at noon + grace period
+    expire = now.replace(hour=12, minute=0, second=0, microsecond=0) + zsk_grace_period
+
+    sign_zone(args.domain, [zsks[0]], ksks, expire)
+    reload_zone(args.domain)
+
+
+def update_signed_zone(args) -> None:
+    """updates the signed zone with additional records"""
+
+    zsks = get_zone_signing_keys(
+        ZSK_DIR,
+        args.domain,
+        args.key_algo,
+        num_of_keys=args.num_zsk,
+        keep_current_keys=True,
+    )
+    ksks = get_key_signing_keys(
+        KSK_DIR,
+        args.domain,
+        args.key_algo,
+        num_of_keys=args.num_ksk,
+        keep_current_keys=True,
+    )
+
+    ttl, expire = grep_zone(args.domain)
+
+    if not ttl or not expire:
+        logger.info("TTL or expiration not found in zone file!")
+        sys.exit(1)
+
+    sign_zone(args.domain, [zsks[0]], ksks, expire)
+    reload_zone(args.domain)
+
+
+def zsk_rollover(args) -> None:
+    """do a zone signing key roll over"""
+
+    zsk_grace_period, propagation_delay, zsk_validity_period = (
+        timedelta(hours=args.zsk_grace_period),
+        timedelta(hours=args.propagation_delay),
+        timedelta(hours=args.zsk_validity_period),
+    )
+
+    zsks = get_zone_signing_keys(
+        ZSK_DIR, args.domain, key_algo=args.key_algo, num_of_keys=args.num_zsk
+    )
+    ksks = get_key_signing_keys(
+        KSK_DIR,
+        args.domain,
+        num_of_keys=args.num_ksk,
+        key_algo=args.key_algo,
+        keep_current_keys=True,
+    )
+
+    ttl, expire = grep_zone(args.domain)
+
+    if not ttl or not expire:
+        logger.info("TTL or expiration not found in zone file!")
+        sys.exit(1)
+
+    now = datetime.now()
+
+    # set rollover at 12 noon
+    new_expiration = (
+        now.replace(hour=12, minute=0, second=0, microsecond=0)
+        + zsk_validity_period
+        + zsk_grace_period
+    )
+
+    # calculate waiting time, based on zone max TTL and propagation delay
+    waiting_time_delta = timedelta(seconds=int(ttl)) + propagation_delay
+    waiting_time = int(waiting_time_delta.total_seconds())
+
+    if not now.date() == expire.date() - zsk_grace_period:
+        logger.info(
+            "Forced rollover, next date should have been %s, %s instead",
+            now.date(),
+            expire.date(),
+        )
+
+        # avoid cases where the running times overlaps with the expiration
+        # by lengthening the validity time
+        if new_expiration < now + waiting_time_delta:
+            new_expiration += zsk_validity_period
+
+    else:
+        logger.info("Planned rollover.")
+
+    logger.info(
+        "Intermediary signing of zone %s with keys: ZSK: (%s) KSK: (%s) with validity: %s",
+        args.domain,
+        " ".join(zsks),
+        " ".join(ksks),
+        now + timedelta(days=1),
+    )
+
+    # sign domain with both keys
+    sign_zone(args.domain, zsks, ksks, now + waiting_time_delta)
+    reload_zone(args.domain)
+
+    logger.info("Sleeping TTL of zone + propagation delay : %s ", waiting_time)
+    time.sleep(waiting_time)
+
+    # discard oldest key
+    oldest_key = zsks.pop()
+
+    # sign the zone only with the newest key(s)
+    logger.info(
+        "Signing zone %s with keys: ZSK: (%s) KSK: (%s) until: %s",
+        args.domain,
+        " ".join(zsks),
+        " ".join(ksks),
+        now + timedelta(days=1),
+    )
+
+    sign_zone(args.domain, [zsks[0]], ksks, new_expiration)
+
+    logger.info(
+        "Signing zone %s succeeded",
+        args.domain,
+    )
+
+    logger.info("Reloading zone %s", args.domain)
+    reload_zone(args.domain)
+
+    logger.info(
+        "Reloaded zone %s",
+        args.domain,
+    )
+
+    if not args.keep_old_keys:
+
+        logger.info("Removing oldest key: %s", ZSK_DIR + "/" + oldest_key)
+
+        extensions = {"key", "private"}
+
+        try:
+            for ext in extensions:
+                subprocess.run(["rm", f"{ZSK_DIR}/{oldest_key}.{ext}"], check=True)
+
+        except subprocess.CalledProcessError as e:
+            logger.exception("Error reloading zone: %s", e)
+
+        logger.info("Removed oldest key: %s", ZSK_DIR + "/" + oldest_key)
+
+
+def main():
+    """main function to implement stuff related to DNSSEC, currenty can do:
+    - a keyrollover of ZSKs
+    - a update of a zone
+    """
+    parser = argparse.ArgumentParser()
+    subparsers = parser.add_subparsers()
+
+    parser.add_argument("domain", type=str, help="domain to do action on")
+    parser.add_argument(
+        "--num_zsk", type=int, default=2, help="number of zone signing keys"
+    )
+    parser.add_argument(
+        "--num_ksk", type=int, default=1, help="number of keys signing keys"
+    )
+    parser.add_argument(
+        "--keep_old_keys", type=bool, default=False, help="whether to keep old keys"
+    )
+
+    parser.add_argument(
+        "--key_algo",
+        type=str,
+        help="type of algorithm to use for DNSSEC",
+        default="ECDSAP384SHA384",
+        choices=[
+            "RSAMD5",
+            "RSASHA1",
+            "RSASHA1-NSEC3-SHA1",
+            "RSASHA256",
+            "RSASHA512",
+            "ECC-GOST",
+            "ECDSAP256SHA256",
+            "ECDSAP384SHA384",
+            "ED25519",
+            "ED448",
+            "DSA",
+            "DSA-NSEC3-SHA1",
+            "hmac-md5.sig-alg.reg.int",
+            "hmac-sha1",
+            "hmac-sha256",
+            "hmac-sha224",
+            "hmac-sha384",
+            "hmac-sha512",
+        ],
+    )
+
+    parser.add_argument(
+        "--propagation_delay",
+        type=int,
+        default=24,
+        help="propagation delay of DNS to keep both keys active",
+    )
+
+    # create the parser for the "foo" command
+    parser_zsk_rollover = subparsers.add_parser("zsk_rollover")
+
+    parser_zsk_rollover.add_argument(
+        "--zsk_validity_period",
+        type=int,
+        default=7,
+        help="validity period of zsk keys",
+    )
+
+    parser_zsk_rollover.add_argument(
+        "--zsk_grace_period",
+        type=int,
+        default=1,
+        help="grace period of additional validity of old zsk",
+    )
+
+    parser_zsk_rollover.set_defaults(func=zsk_rollover)
+
+    parser_ksk_rollover = subparsers.add_parser("ksk_rollover")
+
+    parser_ksk_rollover.add_argument(
+        "--ksk_validity_period",
+        type=int,
+        default=1,
+        help="validity period of new ksk",
+    )
+
+    parser_ksk_rollover.add_argument(
+        "--ksk_grace_period",
+        type=int,
+        default=1,
+        help="grace period of additional validity of old ksk",
+    )
+    parser_ksk_rollover.set_defaults(func=ksk_rollover)
+
+    parser_create_zone = subparsers.add_parser("create_zone")
+    parser_create_zone.set_defaults(func=create_signed_zone)
+
+    parser_create_zone.add_argument(
+        "--zsk_rotation_day",
+        type=int,
+        default=3,
+        help="weekday upon which the initial rotation is offset",
+    )
+
+    # TODO fix initial rotation day
+    # parser_create_zone.add_argument(
+    #     "--ksk_rotation_day",
+    #     type=int,
+    #     default=3,
+    #     help="weekday upon which the initial rotation is offset",
+    # )
+
+    parser_create_zone.add_argument(
+        "--zsk_grace_period",
+        type=int,
+        default=1,
+        help="grace period of additional validity of old zsk",
+    )
+
+    parser_update_zone = subparsers.add_parser("update_zone")
+    parser_update_zone.set_defaults(func=update_signed_zone)
+
+    args = parser.parse_args()
+
+    # change to NSD dir
+    os.chdir(NSD_DIR)
+
+    # executed selected function
+    args.func(args)
+
+
+if __name__ == "__main__":
+    main()

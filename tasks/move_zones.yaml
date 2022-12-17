@@ -23,8 +23,9 @@
 
     - name: Rescope DNSSEC variables
       ansible.builtin.set_fact:
-        nsd_zsk_rollover: "{{ nsd_zone_vars.zsk_rollover }}"
+        nsd_zsk_validity_period: "{{ nsd_zone_vars.zsk_validity_period }}"
         nsd_zsk_grace_period: "{{ nsd_zone_vars.zsk_grace_period }}"
+        nsd_zsk_rotation_day: "{{ nsd_zone_vars.zsk_rotation_day }}"
         nsd_dnssec_propagation_delay: "{{ nsd_zone_vars.dnssec_propagation_delay }}"
         nsd_dnssec_algo: "{{ nsd_zone_vars.dnssec_algo }}"
       when: nsd_dnssec_enabled
@@ -43,17 +44,16 @@
   ansible.builtin.set_fact:
     nsd_records: "{{ lookup('vars', 'nsd_' + nsd_zone_name | replace('.', '_') + '_records') }}"
 
-- include_tasks: dkim_keys.yaml
+- name: Fetch dkim_keys when required
+  ansible.builtin.include_tasks: dkim_keys.yaml
   loop: "{{ nsd_dkim_keys }}"
   loop_control:
     loop_var: dkim_key
-  tags:
-    - nsd_update
   when: nsd_dkim_enabled
 
-- name: move forward zone config file to host
+- name: Move forward zone config file to host
   ansible.builtin.template:
-    src: zone.j2
+    src: zones/zone.j2
     dest: "{{ nsd_directory }}/zones/{{ nsd_zone_name }}.zone"
     validate: "/usr/sbin/nsd-checkzone {{ nsd_zone_name }} %s"
     owner: root
@@ -61,9 +61,9 @@
     mode: u=rw,g=r,o=r
   notify: restart nsd
 
-- name: move reverse zone v4 config file to host
+- name: Move reverse zone v4 config file to host
   ansible.builtin.template:
-    src: zone.rev4.j2
+    src: zones/zone.rev4.j2
     dest: "{{ nsd_directory }}/zones/{{ nsd_reverse_zone_v4_name }}.zone"
     validate: "/usr/sbin/nsd-checkzone {{ nsd_reverse_zone_v4_name }} %s"
     owner: root
@@ -72,9 +72,9 @@
   when: nsd_reverse_zone_v4_enabled
   notify: restart nsd
 
-- name: move reverse zone v6 config file to host
+- name: Move reverse zone v6 config file to host
   ansible.builtin.template:
-    src: zone.rev6.j2
+    src: zones/zone.rev6.j2
     dest: "{{ nsd_directory }}/zones/{{ nsd_reverse_zone_v6_name }}.zone"
     validate: "/usr/sbin/nsd-checkzone {{ nsd_reverse_zone_v6_name }} %s"
     owner: root
@@ -83,7 +83,7 @@
   when: nsd_reverse_zone_v6_enabled
   notify: restart nsd
 
-- name: Do DNSSEC for zones when required
-  include_tasks:
+- name: Do DNSSEC for zone when required
+  ansible.builtin.include_tasks:
     file: dnssec.yaml
   when: nsd_dnssec_enabled

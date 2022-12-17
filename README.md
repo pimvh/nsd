@@ -36,12 +36,13 @@ nsd_zone_attributes:
     dns_negative_response_cache: 300
     make_ascii: true
     dkim_enabled: true
-    dkim_domain: bastia.prac.os3.nl
+    dkim_domain: "<< dkim domain >>"
     dkim_keys: "{{ list of dkim_keys }}"
     dnssec_enabled: true
     dnssec_algo: ECDSAP384SHA384
-    zsk_rollover: "7" <-- in days
-    zsk_grace_period: "1" <-- in days
+    zsk_validity_period: "7" <-- in days
+    zsk_grace_period: "24" <-- in hours
+    zsk_rotation_day: "3" <-- weekday starting at 0
     dnssec_propagation_delay: "24" <-- in hours
     reverse_zone_enabled: true
     reverse_zone_name_v4: "{{ assigned_range_ipv4 | get_rev_dns_origin }}" <-- Use supplied filter to calculate rev dns for a zone,
@@ -77,12 +78,12 @@ nsd_zone_attributes:
 
 # TLDR - What will happen if I run this
 
-- validate whether variables are all defined
-- install nsd (nsd_install set)
-- create a bunch of required directories for NSD and ZSK and KSK organisation
-- setup nsd-control with certificates
-- setup zones and move dnssecpls script
-- setup dnssecpls service (with failmail to required addr)
+- Validate whether variables are all defined
+- Install nsd (nsd_install set)
+- Create a bunch of required directories for NSD and ZSK and KSK organisation
+- Setup nsd-control with certificates
+- Setup zones and move dnssecpls script
+- Setup dnssecpls service (with failmail to required addr)
 
 # Future Improvements
 

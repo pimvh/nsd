@@ -22,11 +22,15 @@
     - "nsd_server_chroot"
     - "nsd_server_remote_control_enable"
     - "nsd_server_remote_control_interfaces"
+    - "nsd_script_directory"
     - "nsd_server_interfaces"
 
 - name: Verify that required zones attributes are defined
   ansible.builtin.include_tasks:
     file: assert_zone_vars.yaml
+    apply:
+      delegate_to: localhost
+      run_once: true
   loop: "{{ nsd_zone_attributes }}"
   loop_control:
     loop_var: nsd_zone_vars

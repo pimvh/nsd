@@ -7,10 +7,12 @@
     apply:
       delegate_to: localhost
       run_once: true
+      tags:
+        - nsd_assert
   tags:
     - nsd_assert
 
-- name: install required packages
+- name: Install required packages
   ansible.builtin.package:
     name:
       - nsd
@@ -26,13 +28,15 @@
 - name: Create required directories
   ansible.builtin.include_tasks:
     file: create_directories.yaml
+    apply:
+      tags:
+        - nsd_setup
   tags:
     - nsd_setup
 
-- name: check if certs are present
+- name: Check if certs are present
   ansible.builtin.stat:
     path: "{{ cert_file }}"
-  become: true
   loop:
     - "{{ nsd_directory }}/nsd_server.key"
     - "{{ nsd_directory }}/nsd_server.pem"
@@ -41,10 +45,11 @@
   loop_control:
     loop_var: cert_file
   register: control_certs
+  become: true
   tags:
     - nsd_setup
 
-- name: setup nsd-control
+- name: Setup nsd-control
   ansible.builtin.command: nsd-control-setup
   become: true
   # only run when not all certs are present
@@ -52,21 +57,25 @@
   tags:
     - nsd_setup
 
-- name: Move zone files to host
-  include_tasks:
-    file: move_zones.yaml
-    apply:
-      become: true
-  loop: "{{ nsd_zone_attributes }}"
-  loop_control:
-    loop_var: nsd_zone_vars
+- name: Template out dnsecsecpls script to host when DNSSEC is enabled
+  ansible.builtin.template:
+    src: scripts/dnssecpls.py.j2
+    dest: "{{ nsd_script_directory }}/dnssecpls"
+    owner: root
+    group: root
+    mode: u=rwx,g=rx,o=rx
+  become: true
+  when: "nsd_zone_attributes | map(attribute='dnssec_enabled') | any"
   tags:
     - nsd_update
 
-- name: Do DNSSEC for zones when required
+- name: Move zone files to host
   ansible.builtin.include_tasks:
-    file: dnssec.yaml
-  when: zone_vars.dnssec.enabled is true
+    file: move_zones.yaml
+    apply:
+      become: true
+      tags:
+        - nsd_update
   loop: "{{ nsd_zone_attributes }}"
   loop_control:
     loop_var: nsd_zone_vars

@@ -1,0 +1,14 @@
+{{ ansible_managed | comment }}
+
+[Unit]
+Description=Runs DNSSEC key rotation as a systemd service
+Wants=zskrollover@{{ nsd_zone_name }}.timer
+
+[Service]
+ExecStart={{ nsd_script_directory }}/dnssecpls --key_algo $KEY_ALGORITHM --propagation_delay $PROPAGATION_DELAY zsk_rollover --zsk_validity_period $ZSK_VALIDITY_PERIOD --zsk_grace_period $ZSK_GRACE_PERIOD {{ nsd_zone_name }}
+EnvironmentFile={{ nsd_directory }}/{{ nsd_zone_name }}_dnssecpls.env
+WorkingDirectory={{ nsd_directory }}
+
+
+[Install]
+WantedBy=multi-user.target

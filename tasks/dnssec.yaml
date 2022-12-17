@@ -1,76 +1,93 @@
 ---
-- name: Move dnsecsecpls script to remote machine
-  template:
-    src: dnssecpls.py.j2
-    dest: /usr/bin/dnssecpls
+- name: Move environment file for systemd service
+  ansible.builtin.template:
+    src: zones/dnssecpls.env.j2
+    dest: "{{ nsd_directory }}/{{ nsd_zone_name }}_dnssecpls.env"
     owner: root
     group: root
-    mode: u=rwx,g=rx,o=rx
+    mode: u=rw,g=r,o=r
   become: true
 
 - name: Update/create signed zone
   block:
     - name: Check if signed zone file is already present
-      stat:
+      ansible.builtin.stat:
         path: "{{ nsd_server_zones_dir }}/{{ nsd_zone_name }}.zone.signed"
       become: true
       register: signed_zone
 
     - name: Update signed zone (when it exists)
-      command: "dnssecpls update_zone {{ nsd_zone_name }}"
+      ansible.builtin.command: >
+        {{ nsd_script_directory }}/dnssecpls
+         --key_algo {{ nsd_dnssec_algo }}
+         update_zone
+         {{ nsd_zone_name }}
       args:
         chdir: "{{ nsd_directory }}"
       become: true
       when: signed_zone.stat.exists
 
-    - name: Create signed zone (when it exists)
-      command: "dnssecpls create_zone {{ nsd_zone_name }}"
+    - name: Create signed zone (when it does not exists)
+      ansible.builtin.command: >
+        {{ nsd_script_directory }}/dnssecpls
+         --key_algo {{ nsd_dnssec_algo }}
+         create_zone
+         --zsk_rotation_day {{ nsd_zsk_rotation_day }}
+         --zsk_grace_period {{ nsd_zsk_grace_period }}
+         {{ nsd_zone_name }}
       args:
         chdir: "{{ nsd_directory }}"
       become: true
       when: not signed_zone.stat.exists
 
-- name: Make systemd services for keyrollover of zone {{ nsd_zone_name }}
+    # TODO finish ksk_rotation day implementation
+    # and add it to creation
+
+- name: Make systemd services for zsk rollover of zone {{ nsd_zone_name }}
   block:
-    - name: Move dnssecpls systemd timer file to host
-      template:
-        src: dnssecpls.timer.j2
-        dest: "/lib/systemd/system/dnssecpls@{{ nsd_zone_name }}.timer"
+    - name: Move zskrollover systemd timer file to host
+      ansible.builtin.template:
+        src: systemd/zskrollover.timer.j2
+        dest: "/etc/systemd/system/zskrollover@{{ nsd_zone_name }}.timer"
         # validate: "systemd-analyze verify %s"
         owner: root
         group: root
         mode: u=rw,g=r,o=r
       become: true
 
-    - name: Move dnssecpls.service systemd file to host
-      template:
-        src: dnssecpls.service.j2
-        dest: "/lib/systemd/system/dnssecpls@{{ nsd_zone_name }}.service"
+    - name: Move zskrollover.service systemd file to host
+      ansible.builtin.template:
+        src: systemd/zskrollover.service.j2
+        dest: "/etc/systemd/system/zskrollover@{{ nsd_zone_name }}.service"
         # validate: "systemd-analyze verify %s"
         owner: root
         group: root
         mode: u=rw,g=r,o=r
       become: true
 
-    - name: Validate dnssecpls.service
-      command: systemd-analyze verify dnssecpls@{{ nsd_zone_name }}.service
+    - name: Validate zskrollover.service
+      ansible.builtin.command: systemd-analyze verify zskrollover@{{ nsd_zone_name }}.service
       args:
-        chdir: "/lib/systemd"
+        chdir: "/etc/systemd"
       changed_when: false
       become: true
 
-    - name: Validate dnssecpls.timer
-      command: systemd-analyze verify dnssecpls@{{ nsd_zone_name }}.timer
+    - name: Validate zskrollover.timer
+      ansible.builtin.command: systemd-analyze verify zskrollover@{{ nsd_zone_name }}.timer
       args:
-        chdir: "/lib/systemd"
+        chdir: "/etc/systemd"
       changed_when: false
       become: true
 
-    - name: Enable dnssec timer service
-      service:
-        name: dnssecpls@{{ nsd_zone_name }}.timer
-        state: started
-        enabled: true
+    - name: Just force systemd to reread configs (2.4 and above)
+      ansible.builtin.systemd:
         daemon_reload: true
       become: true
-# rest should be handled by dnssecpls
+
+    - name: Enable zskrollover timer service
+      ansible.builtin.service:
+        name: zskrollover@{{ nsd_zone_name }}.timer
+        state: started
+        enabled: true
+      become: true
+# rest should be handled by zskrollover

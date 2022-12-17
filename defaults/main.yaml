@@ -1,10 +1,9 @@
 ---
 nsd_install: true
 nsd_directory: /etc/nsd
+nsd_script_directory: /usr/local/bin
 
-nsd_server_interfaces:
-  - "{{ ipv4 }}"
-  - "{{ ipv6 }}"
+nsd_server_interfaces: []
 
 nsd_server_pid_file: "/etc/nsd/run/nsd.pid"
 nsd_server_xfrd_file: "/etc/nsd/db/xfrd.state"
@@ -19,29 +18,28 @@ nsd_server_remote_control_interfaces:
   - "127.0.0.1"
   - "::1"
 
-# pass these variables. see README
-nsd_zones: []
-
 nsd_zone_attributes: {}
-
-nsd_default_ttl: 300
-nsd_default_dns_refresh: 300
-nsd_default_dns_retry: 300
-nsd_default_dns_expire: 300
-nsd_default_dns_negative_response_cache: 300
-nsd_default_dnssec_algo: ECDSAP384SHA384
-nsd_default_make_ascii: false
-nsd_default_dkim_enabled: false
-nsd_default_dkim_domain: ""
-nsd_default_dkim_keys: []
-nsd_default_dnssec_enabled: false
-nsd_default_zsk_rollover: "7"
-nsd_default_zsk_grace_period: "1"
-nsd_default_dnssec_propagation_delay: "24"
-nsd_default_reverse_zone_v4_enabled: false
-nsd_default_reverse_zone_v6_enabled: false
-nsd_default_reverse_zone_v4_name: ""
-nsd_default_reverse_zone_v6_name: ""
+# nsd_zone_attributes:
+#   - name: "DOMAIN"
+#     ttl: 300
+#     dns_refresh: 300
+#     dns_retry: 300
+#     dns_expire: 300
+#     dns_negative_response_cache: 300
+#     make_ascii: true
+#     dkim_enabled: true
+#     dkim_domain: "DKIM DOMAIN"
+#     dkim_keys: []
+#     dnssec_enabled: true
+#     dnssec_algo: ECDSAP384SHA384
+#     zsk_validity_period: "7"
+#     zsk_grace_period: "1"
+#     zsk_rotation_day: "3"
+#     dnssec_propagation_delay: "24"
+#     reverse_zone_v4_enabled: true
+#     reverse_zone_v6_enabled: true
+#     reverse_zone_v4_name: "REVERSE ZONE NAME v4"
+#     reverse_zone_v6_name: "REVERSE ZONE NAME v6"
 
 # magic to generate DNS serial (bliss)
 _today: "{{ lookup('pipe','gdate +%Y%m%d') }}"
