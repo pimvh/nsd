@@ -78,12 +78,13 @@ nsd_zone_attributes:
 
 # TLDR - What will happen if I run this
 
+- Run dependency [systemd-failmail](https://github.com/pimvh/systemd-failmail)
 - Validate whether variables are all defined
 - Install nsd (nsd_install set)
 - Create a bunch of required directories for NSD and ZSK and KSK organisation
 - Setup nsd-control with certificates
-- Setup zones and move dnssecpls script
-- Setup dnssecpls service (with failmail to required addr)
+- Setup zones and move dnssecpls script (when dnssec is enabled)
+- Setup dnssecpls service (when dnssec is enabled)
 
 # Future Improvements
 

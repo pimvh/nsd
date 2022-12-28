@@ -401,22 +401,27 @@ def create_signed_zone(args) -> None:
         keep_current_keys=True,
     )
 
-    zsk_grace_period = timedelta(hours=args.zsk_grace_period)
+    zsk_grace_period, zsk_validity_period = timedelta(
+        hours=args.zsk_grace_period
+    ), timedelta(days=args.zsk_validity_period)
 
-    now = datetime.now()
+    # expire a week later
+    expire = datetime.now() + zsk_validity_period
 
-    if not (now.weekday == args.zsk_rotation_day) or (
-        now.weekday == args.zsk_rotation_day and now.hour < 12
+    if not (expire.weekday == args.zsk_rotation_day) or (
+        expire.weekday == args.zsk_rotation_day and expire.hour < 12
     ):
-        now += timedelta(days=1)
+        expire += timedelta(days=1)
 
         # fetch next fixed day
-        while not now.weekday() == args.zsk_rotation_day:
-            now += timedelta(days=1)
+        while not expire.weekday() == args.zsk_rotation_day:
+            expire += timedelta(days=1)
 
     # when it is already that day before 12, the rotation is today.
     # expire is today at noon + grace period
-    expire = now.replace(hour=12, minute=0, second=0, microsecond=0) + zsk_grace_period
+    expire = (
+        expire.replace(hour=12, minute=0, second=0, microsecond=0) + zsk_grace_period
+    )
 
     sign_zone(args.domain, [zsks[0]], ksks, expire)
     reload_zone(args.domain)
@@ -659,6 +664,13 @@ def main():
         type=int,
         default=3,
         help="weekday upon which the initial rotation is offset",
+    )
+
+    parser_create_zone.add_argument(
+        "--zsk_validity_period",
+        type=int,
+        default=7,
+        help="validity period of zsk keys",
     )
 
     # TODO fix initial rotation day
