@@ -402,7 +402,7 @@ def create_signed_zone(args) -> None:
     )
 
     zsk_grace_period, zsk_validity_period = timedelta(
-        hours=args.zsk_grace_period
+        days=args.zsk_grace_period
     ), timedelta(days=args.zsk_validity_period)
 
     # expire a week later
@@ -459,9 +459,9 @@ def zsk_rollover(args) -> None:
     """do a zone signing key roll over"""
 
     zsk_grace_period, propagation_delay, zsk_validity_period = (
-        timedelta(hours=args.zsk_grace_period),
+        timedelta(days=args.zsk_grace_period),
         timedelta(hours=args.propagation_delay),
-        timedelta(hours=args.zsk_validity_period),
+        timedelta(days=args.zsk_validity_period),
     )
 
     zsks = get_zone_signing_keys(
@@ -505,7 +505,6 @@ def zsk_rollover(args) -> None:
         # by lengthening the validity time
         if new_expiration < now + waiting_time_delta:
             new_expiration += zsk_validity_period
-
     else:
         logger.info("Planned rollover.")
 
@@ -533,7 +532,7 @@ def zsk_rollover(args) -> None:
         args.domain,
         " ".join(zsks),
         " ".join(ksks),
-        now + timedelta(days=1),
+        new_expiration,
     )
 
     sign_zone(args.domain, [zsks[0]], ksks, new_expiration)
