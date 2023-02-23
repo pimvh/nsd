@@ -41,8 +41,8 @@
       become: true
       when: not signed_zone.stat.exists
 
-    # TODO finish ksk_rotation day implementation
-    # and add it to creation
+  # TODO finish ksk_rotation day implementation
+  # and add it to creation
 
 - name: Make systemd services for zsk rollover of zone {{ nsd_zone_name }}
   block:
@@ -67,14 +67,16 @@
       become: true
 
     - name: Validate zskrollover.service
-      ansible.builtin.command: systemd-analyze verify zskrollover@{{ nsd_zone_name }}.service
+      ansible.builtin.command: systemd-analyze verify zskrollover@{{ nsd_zone_name
+        }}.service
       args:
         chdir: "/etc/systemd"
       changed_when: false
       become: true
 
     - name: Validate zskrollover.timer
-      ansible.builtin.command: systemd-analyze verify zskrollover@{{ nsd_zone_name }}.timer
+      ansible.builtin.command: systemd-analyze verify zskrollover@{{ nsd_zone_name
+        }}.timer
       args:
         chdir: "/etc/systemd"
       changed_when: false

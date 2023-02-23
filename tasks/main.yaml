@@ -7,6 +7,9 @@
       run_once: true
       tags:
         - nsd_assert
+  loop: "{{ nsd_zone_attributes }}"
+  loop_control:
+    loop_var: nsd_zone_vars
   tags:
     - nsd_assert
 

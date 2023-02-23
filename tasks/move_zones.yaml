@@ -8,7 +8,8 @@
         nsd_dns_refresh: "{{ nsd_zone_vars.dns_refresh }}"
         nsd_dns_retry: "{{ nsd_zone_vars.dns_retry }}"
         nsd_dns_expire: "{{ nsd_zone_vars.dns_expire }}"
-        nsd_dns_negative_response_cache: "{{ nsd_zone_vars.dns_negative_response_cache }}"
+        nsd_dns_negative_response_cache: "{{ nsd_zone_vars.dns_negative_response_cache
+          }}"
         nsd_make_ascii: "{{ nsd_zone_vars.make_ascii }}"
         nsd_dkim_enabled: "{{ nsd_zone_vars.dkim_enabled }}"
         nsd_dnssec_enabled: "{{ nsd_zone_vars.dnssec_enabled }}"
@@ -42,7 +43,8 @@
 
 - name: Rescope records variable for readability
   ansible.builtin.set_fact:
-    nsd_records: "{{ lookup('vars', 'nsd_' + nsd_zone_name | replace('.', '_') + '_records') }}"
+    nsd_records: "{{ lookup('vars', 'nsd_' + nsd_zone_name | replace('.', '_') + '_records')
+      }}"
 
 - name: Fetch dkim_keys when required
   ansible.builtin.include_tasks: dkim_keys.yaml
