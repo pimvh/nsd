@@ -94,3 +94,10 @@ nsd_zone_attributes:
 - Add automated KSK rollover to dnssecpls script
 - Allow duplicates of dnssecpls script with different variables from ZSK rollover etc as specified in nsd_zone_attributes
 - Only update serial when required, instead of when running role
+
+# Sources
+
+Used as inspiration.
+
+<https://ubuntu.com/server/docs/service-domain-name-service-dns>
+<https://www.digitalocean.com/community/tutorials/how-to-configure-nsd-as-a-private-network-dns-server-on-debian-9>
