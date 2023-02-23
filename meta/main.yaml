@@ -49,7 +49,7 @@ argument_specs:
         description: "Where NSD config files are placed"
 
       nsd_server_interfaces:
-        type: "list"
+        type: list
         default: []
         required: false
         description: "Interfaces on which NSD listens (IPaddrs, either IPv4 or IPv6)"
@@ -121,14 +121,14 @@ argument_specs:
       nsd_zone_attributes:
         type: list
         required: false
-        default: {}
         description: "Attributes of each zone that is defined"
         elements: dict
+        default: []
         options:
           name:
             description: name of the zone
             type: str
-          tll:
+          ttl:
             description: TTL of the zone
             type: int
             required: true
@@ -171,9 +171,9 @@ argument_specs:
                 type: str
                 required: true
               mail:
-              description: mail associated with DKIM key
-              type: str
-              required: true
+                description: mail associated with DKIM key
+                type: str
+                required: true
           dnssec_enabled:
             description: whether this zone has DNSSEC
             type: bool
@@ -184,6 +184,11 @@ argument_specs:
             required: false
           zsk_validity_period:
             description: the validity period of the ZSK
+            type: str
+            required: false
+          zsk_grace_period:
+            description: the grace period of the ZSK, meaning the overlap into the
+              next period of validity
             type: str
             required: false
           zsk_rotation_day:

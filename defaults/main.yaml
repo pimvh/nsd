@@ -18,7 +18,7 @@ nsd_server_remote_control_interfaces:
   - "127.0.0.1"
   - "::1"
 
-nsd_zone_attributes: {}
+nsd_zone_attributes: []
 # nsd_zone_attributes:
 #   - name: "DOMAIN"
 #     ttl: 300
