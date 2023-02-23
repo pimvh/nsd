@@ -1,9 +1,7 @@
-# https://ubuntu.com/server/docs/service-domain-name-service-dns
-# https://www.digitalocean.com/community/tutorials/how-to-configure-nsd-as-a-private-network-dns-server-on-debian-9
 ---
 - name: Assert required variables for role are defined
   ansible.builtin.include_tasks:
-    file: assert.yaml
+    file: assert_zone_vars.yaml
     apply:
       delegate_to: localhost
       run_once: true
@@ -53,7 +51,8 @@
   ansible.builtin.command: nsd-control-setup
   become: true
   # only run when not all certs are present
-  when: "not control_certs.results | map(attribute='stat') | map(attribute='exists') | all"
+  when: "not control_certs.results | map(attribute='stat') | map(attribute='exists')
+    | all"
   tags:
     - nsd_setup
 
