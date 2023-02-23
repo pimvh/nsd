@@ -53,7 +53,7 @@ argument_specs:
         default: []
         required: false
         description: "Interfaces on which NSD listens (IPaddrs, either IPv4 or IPv6)"
-        elements: string
+        elements: str
 
       nsd_server_pid_file:
         type: str
@@ -116,7 +116,7 @@ argument_specs:
           - "127.0.0.1"
           - "::1"
         description: "Interfaces on which remote-control is enabled"
-        elements: string
+        elements: str
 
       nsd_zone_attributes:
         type: list
@@ -180,19 +180,19 @@ argument_specs:
             required: true
           dnssec_algo:
             description: the DNSSEC algorithm used
-            type: string
+            type: str
             required: false
           zsk_validity_period:
             description: the validity period of the ZSK
-            type: string
+            type: str
             required: false
           zsk_rotation_day:
             description: the rotation day of the ZSK
-            type: string
+            type: str
             required: false
           dnssec_propagation_delay:
             description: the propagation for DNSSEC
-            type: string
+            type: str
             required: false
           reverse_zone_v4_enabled:
             description: whether this zone has a reverse IPv4 zone
