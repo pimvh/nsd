@@ -24,3 +24,189 @@ galaxy_info:
 
 dependencies:
   - role: pimvh.systemd_failmail
+
+argument_specs:
+  main:
+    short_description: The main entry point for the nsd role.
+    description: |
+      This entrypoint configure the nsd dns server and requested zones.
+    options:
+      nsd_install:
+        type: bool
+        default: true
+        required: false
+        description: "Whether to install nsd with this role"
+
+      nsd_directory:
+        type: str
+        default: true
+        required: false
+        description: "Where NSD config files are placed"
+
+      nsd_script_directory:
+        type: str
+        required: false
+        description: "Where NSD config files are placed"
+
+      nsd_server_interfaces:
+        type: "list"
+        default: []
+        required: false
+        description: "Interfaces on which NSD listens (IPaddrs, either IPv4 or IPv6)"
+        elements: string
+
+      nsd_server_pid_file:
+        type: str
+        required: false
+        default: /etc/nsd/run/nsd.pid
+        description: "Where NSD stores its PID file"
+
+      nsd_server_xfrd_file:
+        type: str
+        required: false
+        default: /etc/nsd/run/xrf.state
+        description: "Where NSD stores its XFR file"
+
+      nsd_server_xfr_dir:
+        type: str
+        required: false
+        default: /etc/nsd/tmp
+        description: "Where NSD XFR directory config param"
+
+      nsd_server_zones_dir:
+        type: str
+        required: false
+        default: /etc/nsd/zones
+        description: "Where NSD stores zonefiles"
+
+      nsd_server_dnssec_key_dir:
+        type: str
+        required: false
+        default: /etc/nsd/keys
+        description: "Where NSD stores DNSSEC keys"
+
+      nsd_server_zonelist_file:
+        type: str
+        required: false
+        default: /etc/nsd/zone.list
+        description: "Where NSD stores its zonelist file"
+
+      nsd_server_refuse_any:
+        type: str
+        required: false
+        default: "yes"
+        description: "Where NSD refuses ANY queries"
+
+      nsd_server_chroot:
+        type: str
+        required: false
+        default: /etc/nsd
+        description: "Where NSD should be chrooted to"
+
+      nsd_server_remote_control_enable:
+        type: str
+        required: false
+        default: "yes"
+        description: "Whether remote-control is enabled"
+
+      nsd_server_remote_control_interfaces:
+        type: list
+        required: false
+        default:
+          - "127.0.0.1"
+          - "::1"
+        description: "Interfaces on which remote-control is enabled"
+        elements: string
+
+      nsd_zone_attributes:
+        type: list
+        required: false
+        default: {}
+        description: "Attributes of each zone that is defined"
+        elements: dict
+        options:
+          name:
+            description: name of the zone
+            type: str
+          tll:
+            description: TTL of the zone
+            type: int
+            required: true
+          dns_refresh:
+            description: refresh of the zone
+            type: int
+            required: true
+          dns_retry:
+            description: refresh of the zone
+            type: int
+            required: true
+          dns_expire:
+            description: refresh of the zone
+            type: int
+            required: true
+          dns_negative_response_cache:
+            description: negative response cache of the zone
+            type: int
+            required: true
+          make_ascii:
+            description: whether to make an ASCII drawing
+            type: bool
+            required: true
+          dkim_enabled:
+            description: whether this zone has DKIM
+            type: bool
+            required: true
+          dkim_domain:
+            description: whether this zone has DKIM
+            type: str
+            required: false
+          dkim_keys:
+            description: the DKIM keys of the zone
+            type: list
+            required: false
+            elements: dict
+            options:
+              name:
+                description: name of the key
+                type: str
+                required: true
+              mail:
+              description: mail associated with DKIM key
+              type: str
+              required: true
+          dnssec_enabled:
+            description: whether this zone has DNSSEC
+            type: bool
+            required: true
+          dnssec_algo:
+            description: the DNSSEC algorithm used
+            type: string
+            required: false
+          zsk_validity_period:
+            description: the validity period of the ZSK
+            type: string
+            required: false
+          zsk_rotation_day:
+            description: the rotation day of the ZSK
+            type: string
+            required: false
+          dnssec_propagation_delay:
+            description: the propagation for DNSSEC
+            type: string
+            required: false
+          reverse_zone_v4_enabled:
+            description: whether this zone has a reverse IPv4 zone
+            type: bool
+            required: true
+          reverse_zone_v6_enabled:
+            description: whether this zone has a reverse IPv6 zone
+            type: bool
+            required: true
+          reverse_zone_v4_name:
+            description: The name of the reverse IPv4 zone
+            type: str
+            required: true
+          reverse_zone_v6_name:
+            description: The name of the reverse IPv6 zone
+            type: str
+            required: true
