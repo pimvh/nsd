@@ -1,9 +1,23 @@
 ---
 - name: Fetch all DKIM keys for the zonefile
   block:
+    - name: Ensure DKIM path exists {{ dkim_key.name }}
+      ansible.builtin.stat:
+        path: "{{ '/etc/dkimkeys/' + nsd_dkim_domain + '/' + dkim_key.name + '.txt' }}"
+      check_mode: false
+      become: true
+      register: dkim_present
+
+    - name: Error when DKIM path for key {{ dkim_key.name }} does not exist
+      ansible.builtin.fail:
+        msg: "DKIM key {{ dkim_key.name }} was not found on the filesystem at {{ /etc/dkimkeys/' + nsd_dkim_domain + '/' + dkim_key.name + '.txt' }}"
+      check_mode: false
+      become: true
+      when: not dkim_present.stat.exists
+
+
     - name: Read remote dkim key records {{ dkim_key.name }}
-      ansible.builtin.command: "cat {{ '/etc/dkimkeys/' + nsd_dkim_domain + '/' +
-        dkim_key.name + '.txt' }}"
+      ansible.builtin.command: "cat {{ '/etc/dkimkeys/' + nsd_dkim_domain + '/' + dkim_key.name + '.txt' }}"
       changed_when: false
       check_mode: false
       become: true
