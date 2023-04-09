@@ -187,8 +187,7 @@ argument_specs:
             type: str
             required: false
           zsk_grace_period:
-            description: the grace period of the ZSK, meaning the overlap into the
-              next period of validity
+            description: the grace period of the ZSK, meaning the overlap into the next period of validity
             type: str
             required: false
           zsk_rotation_day:
@@ -210,8 +209,8 @@ argument_specs:
           reverse_zone_v4_name:
             description: The name of the reverse IPv4 zone
             type: str
-            required: true
+            required: false
           reverse_zone_v6_name:
             description: The name of the reverse IPv6 zone
             type: str
-            required: true
+            required: false
