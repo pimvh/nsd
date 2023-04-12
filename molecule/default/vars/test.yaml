@@ -1,4 +1,6 @@
 ---
+systemd_failmail_email: "foo@example.com"
+
 nsd_server_interfaces:
   - "127.0.0.1"
   - "::1"
