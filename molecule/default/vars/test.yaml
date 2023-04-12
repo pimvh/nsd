@@ -1,0 +1,49 @@
+---
+nsd_server_interfaces:
+  - "127.0.0.1"
+  - "::1"
+
+nsd_zone_attributes:
+  - name: "example.com"
+    ttl: 300
+    dns_refresh: 300
+    dns_retry: 300
+    dns_expire: 300
+    dns_negative_response_cache: 300
+    make_ascii: false
+    dkim_enabled: false
+    dkim_domain: ""
+    dkim_keys: []
+    dnssec_enabled: true
+    dnssec_algo: ECDSAP384SHA384
+    zsk_validity_period: "7"
+    zsk_grace_period: "1"
+    zsk_rotation_day: "3"
+    dnssec_propagation_delay: "24"
+    reverse_zone_v4_enabled: false
+    reverse_zone_v6_enabled: false
+
+nsd_example_com_records:
+  - id: "@"
+    type: NS
+    record: "ns1"
+  - id: "csr4.nl"
+    type: NS
+    record: "ns1.example.com"
+    no_ptr: true
+  - id: "@"
+    type: A
+    record: "127.0.0.1"
+    no_ptr: true
+  - id: "@"
+    type: AAAA
+    record: "::1"
+    no_ptr: true
+  - id: "foobar"
+    type: A
+    record: "127.0.0.1"
+    no_ptr: true
+  - id: "foobar"
+    type: AAAA
+    record: "::1"
+    no_ptr: true
