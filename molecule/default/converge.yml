@@ -1,0 +1,14 @@
+---
+- name: Converge
+  hosts: all
+  gather_facts: true
+
+  pre_tasks:
+    - name: Check if test vars are present
+      ansible.builtin.include_vars:
+        file: test.yaml
+
+  tasks:
+    - name: "Include pimvh.nsd"
+      ansible.builtin.include_role:
+        name: "nsd"
