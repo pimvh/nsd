@@ -8,6 +8,10 @@ python3 -m ensurepip --upgrade
 pip3 install ansible
 ```
 
+2. The Ansible controller needs to have `date` installed, see `defaults.yaml`.
+
+This is in order to automagically generate a DNS serial.
+
 ## Required variables
 
 Review the variables as shown in defaults.

@@ -42,9 +42,9 @@ nsd_zone_attributes: []
 #     reverse_zone_v6_name: "REVERSE ZONE NAME v6"
 
 # magic to generate DNS serial (bliss)
-_today: "{{ lookup('pipe', 'gdate +%Y%m%d') }}"
-_epoch_midnight: "{{ lookup('pipe', 'gdate --date={{ _today }} +%s') }}"
-_time_now: "{{ lookup('pipe', 'gdate +%s') }}"
+_today: "{{ lookup('pipe', 'date +%Y%m%d') }}"
+_epoch_midnight: "{{ lookup('pipe', 'date --date={{ _today }} +%s') }}"
+_time_now: "{{ lookup('pipe', 'date +%s') }}"
 _num_secs: "{{ _time_now | int - _epoch_midnight | int }}"
 _day_incr: "{{ (_num_secs | int * 99 / 86400) | int }}"
 _dns_serial: "{{ _today }}{{ _day_incr }}"
