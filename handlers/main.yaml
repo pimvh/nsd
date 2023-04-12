@@ -1,5 +1,6 @@
-- name: restart nsd
-  systemd:
+---
+- name: Restart nsd
+  ansible.builtin.systemd:
     name: nsd
     state: restarted
     enabled: true

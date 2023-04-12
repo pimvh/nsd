@@ -8,9 +8,9 @@
       become: true
       register: dkim_present
 
-    - name: Error when DKIM path for key {{ dkim_key.name }} does not exist
+    - name: Error when DKIM path does not exist for key {{ dkim_key.name }}
       ansible.builtin.fail:
-        msg: "DKIM key {{ dkim_key.name }} was not found on the filesystem at {{ /etc/dkimkeys/' + nsd_dkim_domain + '/' + dkim_key.name + '.txt' }}"
+        msg: "DKIM key {{ dkim_key.name }} was not found on the filesystem at {{ '/etc/dkimkeys/' + nsd_dkim_domain + '/' + dkim_key.name + '.txt' }}"
       check_mode: false
       become: true
       when: not dkim_present.stat.exists

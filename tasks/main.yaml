@@ -54,8 +54,8 @@
   ansible.builtin.command: nsd-control-setup
   become: true
   # only run when not all certs are present
-  when: "not control_certs.results | map(attribute='stat') | map(attribute='exists')
-    | all"
+  when: "not control_certs.results | map(attribute='stat') | map(attribute='exists') | all"
+  changed_when: true
   tags:
     - nsd_setup
 

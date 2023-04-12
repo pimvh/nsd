@@ -24,6 +24,7 @@
          {{ nsd_zone_name }}
       args:
         chdir: "{{ nsd_directory }}"
+      changed_when: true
       become: true
       when: signed_zone.stat.exists
 
@@ -38,6 +39,7 @@
          {{ nsd_zone_name }}
       args:
         chdir: "{{ nsd_directory }}"
+      changed_when: true
       become: true
       when: not signed_zone.stat.exists
 
@@ -67,16 +69,14 @@
       become: true
 
     - name: Validate zskrollover.service
-      ansible.builtin.command: systemd-analyze verify zskrollover@{{ nsd_zone_name
-        }}.service
+      ansible.builtin.command: systemd-analyze verify zskrollover@{{ nsd_zone_name }}.service
       args:
         chdir: "/etc/systemd"
       changed_when: false
       become: true
 
     - name: Validate zskrollover.timer
-      ansible.builtin.command: systemd-analyze verify zskrollover@{{ nsd_zone_name
-        }}.timer
+      ansible.builtin.command: systemd-analyze verify zskrollover@{{ nsd_zone_name }}.timer
       args:
         chdir: "/etc/systemd"
       changed_when: false
