@@ -2,6 +2,8 @@
 - name: Run serial script
   ansible.builtin.script: |
     generate_serial.sh
+  args:
+    executable: /bin/bash
   changed_when: false
   register: generated_serial
   delegate_to: localhost

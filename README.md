@@ -97,7 +97,6 @@ nsd_zone_attributes:
 - Allow TTL to be passed in records
 - Add automated KSK rollover to dnssecpls script
 - Allow duplicates of dnssecpls script with different variables from ZSK rollover etc as specified in nsd_zone_attributes
-- Only update serial when required, instead of when running role
 
 # Sources
 
