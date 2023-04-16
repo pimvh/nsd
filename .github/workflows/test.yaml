@@ -51,7 +51,6 @@ jobs:
       - name: Enable IPv6 support for docker
         run: |
           mkdir -p /etc/docker/
-          chown runner:docker /etc/docker
           tee << EOF > /etc/docker/daemon.json
           {
             "ipv6": true,
