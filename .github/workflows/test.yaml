@@ -48,6 +48,17 @@ jobs:
         with:
           python-version: "3.11"
 
+      - name: Enable IPv6 support for docker
+        run: |
+          mkdir -p /etc/docker/
+          chown runner:docker /etc/docker
+          tee << EOF > /etc/docker/daemon.json
+          {
+            "ipv6": true,
+            "fixed-cidr-v6": "2001:db8:1::/64"
+          }
+          EOF
+
       - name: Install dependencies
         run: |
           sudo apt install apt-transport-https ca-certificates curl software-properties-common
@@ -55,16 +66,6 @@ jobs:
           sudo sh get-docker.sh
           python -m pip install --upgrade pip
           pip3 install ansible molecule[docker] yamllint ansible-lint pytest-testinfra
-
-      - name: Enable IPv6 support for docker
-        run: |
-          sudo tee << EOF > /etc/docker/daemon.json
-          {
-            "ipv6": true,
-            "fixed-cidr-v6": "2001:db8:1::/64"
-          }
-          EOF
-          sudo systemctl restart docker
 
       - name: Run role tests
         run: |
