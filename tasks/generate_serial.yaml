@@ -1,0 +1,12 @@
+---
+- name: Run serial script
+  ansible.builtin.script: |
+    generate_serial.sh
+  changed_when: false
+  register: generated_serial
+  delegate_to: localhost
+  run_once: true
+
+- name: Set the generated serial as a fact
+  ansible.builtin.set_fact:
+    _generated_dns_serial: "{{ generated_serial.stdout | trim }}"

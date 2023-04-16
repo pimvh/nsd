@@ -8,8 +8,7 @@
         nsd_dns_refresh: "{{ nsd_zone_vars.dns_refresh }}"
         nsd_dns_retry: "{{ nsd_zone_vars.dns_retry }}"
         nsd_dns_expire: "{{ nsd_zone_vars.dns_expire }}"
-        nsd_dns_negative_response_cache: "{{ nsd_zone_vars.dns_negative_response_cache
-          }}"
+        nsd_dns_negative_response_cache: "{{ nsd_zone_vars.dns_negative_response_cache }}"
         nsd_make_ascii: "{{ nsd_zone_vars.make_ascii }}"
         nsd_dkim_enabled: "{{ nsd_zone_vars.dkim_enabled }}"
         nsd_dnssec_enabled: "{{ nsd_zone_vars.dnssec_enabled }}"
@@ -43,8 +42,7 @@
 
 - name: Rescope records variable for readability
   ansible.builtin.set_fact:
-    nsd_records: "{{ lookup('vars', 'nsd_' + nsd_zone_name | replace('.', '_') + '_records')
-      }}"
+    nsd_records: "{{ lookup('vars', 'nsd_' + nsd_zone_name | replace('.', '_') + '_records') }}"
 
 - name: Fetch dkim_keys when required
   ansible.builtin.include_tasks: dkim_keys.yaml
@@ -53,39 +51,115 @@
     loop_var: dkim_key
   when: nsd_dkim_enabled
 
-- name: Move forward zone config file to host
-  ansible.builtin.template:
-    src: zones/zone.j2
-    dest: "{{ nsd_directory }}/zones/{{ nsd_zone_name }}.zone"
-    validate: "/usr/sbin/nsd-checkzone {{ nsd_zone_name }} %s"
-    owner: root
-    group: nsd
-    mode: u=rw,g=r,o=r
-  notify: restart nsd
+- name: Check if zonefile exists
+  ansible.builtin.stat:
+    path: "{{ nsd_directory }}/zones/{{ nsd_zone_name }}.zone"
+    checksum_algorithm: "{{ nsd_checksum_algorithm }}"
+  check_mode: false
+  changed_when: false
+  register: zone_file
 
-- name: Move reverse zone v4 config file to host
-  ansible.builtin.template:
-    src: zones/zone.rev4.j2
-    dest: "{{ nsd_directory }}/zones/{{ nsd_reverse_zone_v4_name }}.zone"
-    validate: "/usr/sbin/nsd-checkzone {{ nsd_reverse_zone_v4_name }} %s"
-    owner: root
-    group: nsd
-    mode: u=rw,g=r,o=r
-  when: nsd_reverse_zone_v4_enabled
-  notify: restart nsd
+- name: Check if update of zonefile is necessary (when it already exists)
+  when: zone_file.stat.exists
+  block:
+    - name: Read serial when zonefile is present
+      ansible.builtin.script: |
+        grep_serial.py {{ nsd_directory }}/zones/ {{ nsd_zone_name }}
+      args:
+        executable: python3
+      changed_when: false
+      register: found_dns_serial_out
 
-- name: Move reverse zone v6 config file to host
-  ansible.builtin.template:
-    src: zones/zone.rev6.j2
-    dest: "{{ nsd_directory }}/zones/{{ nsd_reverse_zone_v6_name }}.zone"
-    validate: "/usr/sbin/nsd-checkzone {{ nsd_reverse_zone_v6_name }} %s"
-    owner: root
-    group: nsd
-    mode: u=rw,g=r,o=r
-  when: nsd_reverse_zone_v6_enabled
-  notify: restart nsd
+    - name: Read serial when zonefile is present
+      ansible.builtin.set_fact:
+        found_dns_serial: "{{ found_dns_serial_out.stdout | trim }}"
 
-- name: Do DNSSEC for zone when required
-  ansible.builtin.include_tasks:
-    file: dnssec.yaml
-  when: nsd_dnssec_enabled
+    - name: Template to temporary dir and compute hash
+      block:
+        - name: Create temporary directory
+          ansible.builtin.tempfile:
+            state: directory
+          register: _tempfile
+          changed_when: false
+
+        - name: Template file
+          ansible.builtin.template:
+            src: zones/zone.j2
+            dest: "{{ _tempfile.path }}/{{ nsd_zone_name }}.zone"
+            owner: root
+            group: nsd
+            mode: u=rw,g=r,o=r
+          changed_when: false
+          vars:
+            _dns_serial: "{{ found_dns_serial }}"
+          diff: true
+
+        - name: Stat file to get checksum
+          ansible.builtin.stat:
+            path: "{{ _tempfile.path }}/{{ nsd_zone_name }}.zone"
+            checksum_algorithm: "{{ nsd_checksum_algorithm }}"
+          changed_when: false
+          register: new_zonefile
+
+      always:
+        - name: Remove temporary directory
+          ansible.builtin.file:
+            name: "{{ _tempfile.path }}"
+            state: absent
+          check_mode: false
+          changed_when: false
+
+    - name: Show DNS serial
+      ansible.builtin.debug:
+
+    - name: Check if hashes match
+      ansible.builtin.set_fact:
+        zone_file_hashes_do_not_match: "{{ new_zonefile.stat.checksum != zone_file.stat.checksum }}"
+
+- name: Move forward zone config file to host when required
+  # this var not being defined, means that the zonefile does not exist already
+  # and we need to push one regardless
+  when: zone_file_hashes_do_not_match | default(true)
+  block:
+    - name: Move zonefile
+      ansible.builtin.template:
+        src: zones/zone.j2
+        dest: "{{ nsd_directory }}/zones/{{ nsd_zone_name }}.zone"
+        validate: "/usr/sbin/nsd-checkzone {{ nsd_zone_name }} %s"
+        owner: root
+        group: nsd
+        mode: u=rw,g=r,o=r
+      vars:
+        _dns_serial: "{{ _generated_dns_serial }}"
+      notify: restart nsd
+
+    - name: Move reverse zone v4 config file to host
+      ansible.builtin.template:
+        src: zones/zone.rev4.j2
+        dest: "{{ nsd_directory }}/zones/{{ nsd_reverse_zone_v4_name }}.zone"
+        validate: "/usr/sbin/nsd-checkzone {{ nsd_reverse_zone_v4_name }} %s"
+        owner: root
+        group: nsd
+        mode: u=rw,g=r,o=r
+      vars:
+        _dns_serial: "{{ _generated_dns_serial }}"
+      when: nsd_reverse_zone_v4_enabled
+      notify: restart nsd
+
+    - name: Move reverse zone v6 config file to host
+      ansible.builtin.template:
+        src: zones/zone.rev6.j2
+        dest: "{{ nsd_directory }}/zones/{{ nsd_reverse_zone_v6_name }}.zone"
+        validate: "/usr/sbin/nsd-checkzone {{ nsd_reverse_zone_v6_name }} %s"
+        owner: root
+        group: nsd
+        mode: u=rw,g=r,o=r
+      vars:
+        _dns_serial: "{{ _generated_dns_serial }}"
+      when: nsd_reverse_zone_v6_enabled
+      notify: restart nsd
+
+    - name: Do DNSSEC for zone when required
+      ansible.builtin.include_tasks:
+        file: dnssec.yaml
+      when: nsd_dnssec_enabled

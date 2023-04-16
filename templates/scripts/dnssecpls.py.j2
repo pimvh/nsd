@@ -9,14 +9,14 @@ Thanks Jeroen van der Ham and Digital Ocean :)
 """
 
 import argparse
-from datetime import datetime, timedelta
 import logging
 import os
-from pathlib import Path
 import re
 import subprocess
 import sys
 import time
+from datetime import datetime, timedelta
+from pathlib import Path
 
 logging.basicConfig(level="INFO")
 logger = logging.getLogger()
@@ -41,10 +41,8 @@ def get_key_filenames(directory: str, domain: str):
     key_files = []
 
     for _, _, filenames in os.walk(directory):
-
         for filename in filenames:
             if domain in filename:
-
                 # only append filename not whole filename
                 key_files.append(Path(filename).stem)
 
@@ -88,7 +86,6 @@ def get_keys(
 
     if keep_current_keys:
         while len(current_keys) > amount_of_keys:
-
             old_key = current_keys.pop()
 
             try:
@@ -114,7 +111,6 @@ def get_keys(
             current_keys = get_key_filenames(directory, domain)
 
     while not len(current_keys) == amount_of_keys:
-
         os.chdir(directory)
 
         try:
@@ -137,7 +133,8 @@ def get_keys(
 
 def increment_serial(file):
     """replace pattern in file, taken from
-    https://stackoverflow.com/questions/39086/search-and-replace-a-line-in-a-file-in-python"""
+    https://stackoverflow.com/questions/39086/search-and-replace-a-line-in-a-file-in-python
+    """
 
     # Read contents from file as a single string
     file_handle = open(file, "r")
@@ -200,7 +197,7 @@ def grep_zone(domain: str):
 
     try:
         grepper = subprocess.run(
-            f'cat {ZONE_DIR}/{domain}.zone | grep -i "{TTL_MARKER}"',
+            f'grep -i "{TTL_MARKER}" {ZONE_DIR}/{domain}.zone',
             capture_output=True,
             shell=True,
             check=True,
@@ -210,7 +207,7 @@ def grep_zone(domain: str):
         ttl = grepper.stdout.decode("utf-8").split(";")[0].strip()
 
         grepper = subprocess.run(
-            f'cat {ZONE_DIR}/{domain}.zone.signed | egrep -i "{EXP_MARKER}"',
+            f'egrep -i "{EXP_MARKER}" {ZONE_DIR}/{domain}.zone.signed',
             capture_output=True,
             shell=True,
             check=True,
@@ -551,7 +548,6 @@ def zsk_rollover(args) -> None:
     )
 
     if not args.keep_old_keys:
-
         logger.info("Removing oldest key: %s", ZSK_DIR + "/" + oldest_key)
 
         extensions = {"key", "private"}

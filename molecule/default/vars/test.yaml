@@ -29,10 +29,6 @@ nsd_example_com_records:
   - id: "@"
     type: NS
     record: "ns1"
-  - id: "csr4.nl"
-    type: NS
-    record: "ns1.example.com"
-    no_ptr: true
   - id: "@"
     type: A
     record: "127.0.0.1"
@@ -48,4 +44,8 @@ nsd_example_com_records:
   - id: "foobar"
     type: AAAA
     record: "::1"
+    no_ptr: true
+  - id: "@"
+    type: TXT
+    record: "text goes here"
     no_ptr: true

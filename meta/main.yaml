@@ -48,6 +48,12 @@ argument_specs:
         required: false
         description: "Where NSD config files are placed"
 
+      nsd_checksum_algorithm:
+        type: str
+        required: false
+        default: "sha1"
+        description: "Checksum algorithm used to compare files"
+
       nsd_server_interfaces:
         type: list
         default: []

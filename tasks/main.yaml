@@ -71,6 +71,15 @@
   tags:
     - nsd_update
 
+- name: Generate DNS serial
+  ansible.builtin.include_tasks:
+    file: generate_serial.yaml
+    apply:
+      tags:
+        - nsd_update
+  tags:
+    - nsd_update
+
 - name: Move zone files to host
   ansible.builtin.include_tasks:
     file: move_zones.yaml

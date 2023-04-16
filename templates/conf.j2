@@ -32,8 +32,7 @@ remote-control:
     control-key-file: "{{ nsd_directory }}/nsd_control.key"
     control-cert-file: "{{ nsd_directory }}/nsd_control.pem"
 {% endif %}
-
-{% for config in nsd_zone_attributes %}
+{%+ for config in nsd_zone_attributes %}
 zone:
     name: {{ config.name  }}
     zonefile: {{ config.name }}.zone{% if config.dnssec_enabled %}.signed{% endif +%}
@@ -41,8 +40,7 @@ zone:
     notify: {{ config.notify.ip }} {{ config.notify.value}}
     request-xfr: {{ config.notify.ip }} {{ config.notify.value}}
 {% endif %}
-
-{% if config.reverse_zone_v4_enabled %}
+{%+ if config.reverse_zone_v4_enabled %}
 zone:
     name: {{ config.reverse_zone_v4_name }}
     zonefile: {{ config.reverse_zone_v4_name }}.zone
@@ -51,8 +49,7 @@ zone:
     request-xfr: {{ config.notify.ip }} {{ config.notify.value}}
 {% endif %}
 {% endif %}
-
-{% if config.reverse_zone_v6_enabled %}
+{%+ if config.reverse_zone_v6_enabled %}
 zone:
     name: {{ config.reverse_zone_v6_name }}
     zonefile: {{ config.reverse_zone_v6_name }}.zone
@@ -61,9 +58,7 @@ zone:
     request-xfr: {{ config.notify.ip }} {{ config.notify.value}}
 {% endif %}
 {% endif %}
-
 {% endfor %}
-
 {#
  # TODO
  # zone:
