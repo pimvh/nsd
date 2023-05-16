@@ -2,7 +2,7 @@
 nsd_install: true
 nsd_directory: /etc/nsd
 nsd_script_directory: /usr/local/bin
-nsd_checksum_algorithm: "sha1"
+nsd_checksum_algorithm: "sha256"
 
 nsd_server_interfaces: []
 

@@ -51,7 +51,7 @@ argument_specs:
       nsd_checksum_algorithm:
         type: str
         required: false
-        default: "sha1"
+        default: "sha256"
         description: "Checksum algorithm used to compare files"
 
       nsd_server_interfaces:
