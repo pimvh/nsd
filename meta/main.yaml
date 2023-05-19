@@ -21,6 +21,10 @@ galaxy_info:
     - dkim
     - spf
     - asciiart
+    - dnssec
+    - zsk
+    - rotation
+    - systemd
 
 dependencies:
   - role: pimvh.systemd_failmail
