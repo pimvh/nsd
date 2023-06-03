@@ -67,6 +67,7 @@
         grep_serial.py {{ nsd_directory }}/zones/ {{ nsd_zone_name }}
       args:
         executable: python3
+      check_mode: false
       changed_when: false
       register: found_dns_serial_out
 
@@ -75,6 +76,7 @@
         found_dns_serial: "{{ found_dns_serial_out.stdout | trim }}"
 
     - name: Template to temporary dir and compute hash
+      check_mode: false
       block:
         - name: Create temporary directory
           ansible.builtin.tempfile:
@@ -108,9 +110,6 @@
             state: absent
           check_mode: false
           changed_when: false
-
-    - name: Show DNS serial
-      ansible.builtin.debug:
 
     - name: Check if hashes match
       ansible.builtin.set_fact:

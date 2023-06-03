@@ -1,13 +1,14 @@
 ---
 - name: Run serial script
-  ansible.builtin.script: |
-    generate_serial.sh
+  ansible.builtin.script:
+    cmd: generate_serial.sh
   args:
     executable: /bin/bash
   changed_when: false
-  register: generated_serial
+  check_mode: false
   delegate_to: localhost
   run_once: true
+  register: generated_serial
 
 - name: Set the generated serial as a fact
   ansible.builtin.set_fact:
