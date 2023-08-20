@@ -1,6 +1,6 @@
 ---
 galaxy_info:
-  author: Pim van Helvoirt
+  author: pimvh
   description: "role to configure nsd using a YAML structure"
 
   license: GPL-3.0-only
