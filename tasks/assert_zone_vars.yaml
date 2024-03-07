@@ -3,17 +3,20 @@
   ansible.builtin.set_fact:
     nsd_zone_name: "{{ nsd_zone_vars.name }}"
     nsd_zone_records_name: "{{ 'nsd_' + nsd_zone_vars.name | replace('.', '_') + '_records' }}"
+    nsd_zone_records: "{{ lookup('ansible.builtin.vars', 'nsd_zone_records_name', default='') }} | list"
 
 - name: Verify that required zone records are defined
   ansible.builtin.assert:
     that:
-      - "{{ lookup('ansible.builtin.vars', 'nsd_zone_records_name', default='') }} | list is defined"
-      - "{{ lookup('ansible.builtin.vars', 'nsd_zone_records_name', default='') }} | list | length > 0"
-      - "{{ lookup('ansible.builtin.vars', 'nsd_zone_records_name', default='') }} | list != None"
+      - "{{ item }} is defined"
+      - "{{ item }} | length > 0"
+      - "{{ item }} != None"
     fail_msg: "{{ nsd_zone_records_name }} needs to be set for the role to work"
     success_msg: "Required variable {{ nsd_zone_records_name }} is defined"
   changed_when: false
   diff: false
+  loop:
+    - nsd_zone_records
 
 - name: Verify that required DKIM attributes are defined
   ansible.builtin.assert:
